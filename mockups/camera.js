@@ -3,10 +3,10 @@
 (() => {
   'use strict';
 
-  const { W, H, frames, standIn, fontsReady } = window.SmileFrames;
+  const { W, H, frames, ids, standIn, fontsReady } = window.SmileFrames;
   const $ = (id) => document.getElementById(id);
   const key = new URLSearchParams(location.search).get('f');
-  const id = frames[key] ? key : 'a';
+  const id = frames[key] ? key : ids[0];
   const frame = frames[id];
 
   const video = $('video'), overlay = $('overlay');
@@ -20,9 +20,9 @@
   document.querySelectorAll('.switch a').forEach((a) => {
     if (a.dataset.f === id) a.setAttribute('aria-current', 'page');
   });
-  $('frame-name').textContent = `${id.toUpperCase()} · ${frame.name}`;
-  $('frame-blurb').textContent = `${frame.blurb} Frame covers ${frame.cover} of the photo.`;
-  document.title = `${id.toUpperCase()} · ${frame.name} · Smile Frame options`;
+  $('frame-name').textContent = frame.name;
+  $('frame-blurb').textContent = frame.blurb;
+  document.title = `${frame.name} · Smile Frame · Pune Smile Day`;
 
   function drawOverlay() {
     const r = overlay.getBoundingClientRect();
@@ -138,6 +138,7 @@
 
   function retake() {
     resultBlob = null;
+    $('add').disabled = false;
     if (stream) {
       video.hidden = false;
       still.hidden = true;
@@ -184,7 +185,19 @@
   $('retake').addEventListener('click', retake);
   $('save').addEventListener('click', save);
   $('share').addEventListener('click', share);
-  $('add').addEventListener('click', () => toast('Mockup only: the shared Smile Wall is connected in a later step.'));
+  $('add').addEventListener('click', async () => {
+    if (!resultBlob) return;
+    $('add').disabled = true;
+    try {
+      await window.SmileStore.add(resultBlob, id);
+      stopCamera();
+      location.href = 'wall.html?new=1';
+    } catch (e) {
+      console.error(e);
+      $('add').disabled = false;
+      toast('Couldn’t save your photo on this phone. Please try again.');
+    }
+  });
   window.addEventListener('resize', drawOverlay);
   window.addEventListener('pagehide', stopCamera);
   document.addEventListener('visibilitychange', () => {

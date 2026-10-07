@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F28C38">
+  <title>Smile Wall · Pune Smile Day</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body class="wall-page">
+  <main class="wall">
+    <header class="wall__head">
+      <span class="wall__brand"><img src="../assets/sakal-logo-white.svg" alt="Sakal" class="wall__logo" width="116" height="29"></span>
+      <span class="wall__date">1 Nov · 9:00 AM</span>
+      <svg class="wall__sun" viewBox="0 0 120 120" aria-hidden="true"><use href="#sun"/></svg>
+      <h1 class="wall__title">Pune’s<br>Smile Wall</h1>
+      <p class="wall__lede">Make your Smile Frame, share it with <b>#SmileDay</b>, and see it pinned up here.</p>
+    </header>
+
+    <section class="wall__board" aria-labelledby="board-title">
+      <div class="wall__count">
+        <h2 id="board-title">Your smiles</h2>
+        <span id="count" class="wall__num">0</span>
+      </div>
+      <p class="wall__private">Only you can see these for now. They’re saved on this phone. The shared wall opens on Smile Day.</p>
+      <ul id="grid" class="wall__grid" aria-live="polite"></ul>
+      <div id="empty" class="wall__empty" hidden>
+        <svg viewBox="0 0 120 120" aria-hidden="true"><use href="#sun"/></svg>
+        <p>No smiles yet. Yours can be the first one up.</p>
+      </div>
+    </section>
+
+    <footer class="wall__foot">
+      <a href="camera.html" class="cta">
+        <span class="cta__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        </span>
+        Make your Smile Frame
+      </a>
+      <a href="./" class="wall__options">See all frame options</a>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="sun" viewBox="0 0 120 120">
+      <g fill="#FFC93C" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">
+        <path d="M93.6 55.1L115.0 60.0L93.6 64.9ZM91.6 72.6L107.6 87.5L86.7 81.0ZM81.0 86.7L87.5 107.6L72.6 91.6ZM64.9 93.6L60.0 115.0L55.1 93.6ZM47.4 91.6L32.5 107.6L39.0 86.7ZM33.3 81.0L12.4 87.5L28.4 72.6ZM26.4 64.9L5.0 60.0L26.4 55.1ZM28.4 47.4L12.4 32.5L33.3 39.0ZM39.0 33.3L32.5 12.4L47.4 28.4ZM55.1 26.4L60.0 5.0L64.9 26.4ZM72.6 28.4L87.5 12.4L81.0 33.3ZM86.7 39.0L107.6 32.5L91.6 47.4Z"/>
+        <circle cx="60" cy="60" r="36"/>
+      </g>
+      <circle cx="49" cy="57" r="4" fill="#2B1D0E"/>
+      <circle cx="71" cy="57" r="4" fill="#2B1D0E"/>
+      <path d="M46 68c4 7 9 10 14 10s10-3 14-10" fill="none" stroke="#2B1D0E" stroke-width="4.5" stroke-linecap="round"/>
+    </symbol>
+  </svg>
+
+  <script src="store.js"></script>
+  <script>
+    (() => {
+      const grid = document.getElementById('grid');
+      const TILTS = [-2.5, 2, -1.5, 2.5, -2, 1.5];
+      let urls = [];
+
+      async function render() {
+        urls.forEach(URL.revokeObjectURL);
+        urls = [];
+        let photos = [];
+        try { photos = await SmileStore.list(); } catch (e) { console.error(e); }
+        document.getElementById('count').textContent = photos.length.toLocaleString('en-IN');
+        document.getElementById('empty').hidden = photos.length > 0;
+        grid.innerHTML = '';
+        const fresh = new URLSearchParams(location.search).has('new');
+        photos.forEach((p, i) => {
+          const url = URL.createObjectURL(p.blob);
+          urls.push(url);
+          const li = document.createElement('li');
+          li.className = 'tile';
+          li.style.setProperty('--tilt', TILTS[i % TILTS.length] + 'deg');
+          li.style.animationDelay = Math.min(i, 8) * 50 + 'ms';
+          const n = photos.length - i;
+          li.innerHTML = `
+            ${fresh && i === 0 ? '<span class="tile__new">Just now</span>' : ''}
+            <img src="${url}" alt="Your Smile Frame, smile number ${n}" loading="lazy">
+            <button type="button" class="tile__remove" aria-label="Remove smile number ${n}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>`;
+          li.querySelector('button').addEventListener('click', async () => {
+            if (!confirm('Remove this photo from your wall?')) return;
+            await SmileStore.remove(p.id);
+            render();
+          });
+          grid.appendChild(li);
+        });
+        if (fresh && photos.length) toast('You’re on the wall!');
+        if (fresh) history.replaceState(null, '', location.pathname);
+      }
+
+      let t;
+      function toast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.hidden = false;
+        clearTimeout(t);
+        t = setTimeout(() => { el.hidden = true; }, 2800);
+      }
+
+      render();
+    })();
+  </script>
+</body>
+</html>
