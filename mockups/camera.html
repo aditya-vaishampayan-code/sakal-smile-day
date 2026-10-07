@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0E0D0B">
+  <title>Smile Frame options · Pune Smile Day</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <main class="cam">
+    <header class="bar">
+      <a href="./" class="icon-btn" aria-label="All frame options">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </a>
+      <nav class="switch" aria-label="Frame option">
+        <a href="?f=a" data-f="a">A</a>
+        <a href="?f=b" data-f="b">B</a>
+        <a href="?f=c" data-f="c">C</a>
+      </nav>
+    </header>
+
+    <div class="vf" id="vf">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+      <div id="countdown" class="countdown" hidden aria-live="assertive"></div>
+      <div id="flash" class="flash" aria-hidden="true"></div>
+    </div>
+    <p id="notice" class="notice" hidden></p>
+
+    <div class="meta">
+      <h1 id="frame-name">Smile Frame</h1>
+      <p id="frame-blurb"></p>
+    </div>
+
+    <div class="controls">
+      <div id="ready" class="ready">
+        <button type="button" id="shutter" class="shutter" aria-label="Take photo, 3-second countdown" disabled><span></span></button>
+        <p class="hint">Tap and smile · 3, 2, 1</p>
+      </div>
+      <div id="review" class="review" hidden>
+        <button type="button" id="add" class="btn btn--primary">Add to the Smile Wall</button>
+        <div class="review__row">
+          <button type="button" id="retake" class="btn btn--quiet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+            Retake
+          </button>
+          <button type="button" id="save" class="btn btn--quiet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>
+            Save
+          </button>
+          <button type="button" id="share" class="btn btn--quiet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4"/><path d="M7 9l5-5 5 5"/><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg>
+            Share
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="frames.js"></script>
+  <script src="camera.js"></script>
+</body>
+</html>

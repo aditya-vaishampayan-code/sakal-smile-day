@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0E0D0B">
+  <title>Smile Frame options · Pune Smile Day</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <main class="overview">
+    <h1>Three Smile Frames</h1>
+    <p>Each option keeps your face big and puts the Pune Smile Day branding at the edges. Open one on your phone to try it with your own camera; the photo you save looks exactly like the viewfinder.</p>
+
+    <ol class="options" id="options"></ol>
+
+    <p class="note">Previews use a stand-in portrait. “SAKAL” is a placeholder until the real logo file arrives.</p>
+  </main>
+
+  <script src="frames.js"></script>
+  <script>
+    (() => {
+      const { W, H, frames, standIn, fontsReady } = window.SmileFrames;
+      const list = document.getElementById('options');
+      const canvases = [];
+      Object.entries(frames).forEach(([id, f]) => {
+        const li = document.createElement('li');
+        li.className = 'option';
+        li.innerHTML = `<a href="camera.html?f=${id}">
+          <canvas width="${W}" height="${H}" role="img" aria-label="Option ${id.toUpperCase()} preview: ${f.name}"></canvas>
+          <h2><b>${id.toUpperCase()}</b> ${f.name}</h2>
+          <p>${f.blurb} Frame covers ${f.cover} of the photo.</p>
+          <span class="try">Try it with your camera →</span>
+        </a>`;
+        list.appendChild(li);
+        canvases.push([li.querySelector('canvas'), f]);
+      });
+      const paint = () => canvases.forEach(([c, f]) => {
+        const ctx = c.getContext('2d');
+        standIn(ctx);
+        f.draw(ctx);
+      });
+      paint();
+      fontsReady().then(paint);
+    })();
+  </script>
+</body>
+</html>
