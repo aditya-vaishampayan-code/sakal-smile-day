@@ -12,11 +12,14 @@
   --white: #FFFFFF;
   --sans: 'Poppins', system-ui, sans-serif;
   --round: 'Fredoka', 'Poppins', system-ui, sans-serif;
-  --u: min(calc(100vw / 390), calc(100vh / 844), 1.1px);
+  /* One design pixel. Fits the artboard to the viewport, but never shrinks below
+   * 0.92 of the width scale: on short viewports (browser toolbars, in-app
+   * browsers) the page scrolls instead of making text and buttons tiny. */
+  --u: min(calc(100vw / 390), max(calc(100vh / 844), calc(100vw / 390 * .92)), 1.1px);
   --safe-top: env(safe-area-inset-top, 0px);
 }
 @supports (height: 100dvh) {
-  :root { --u: min(calc(100vw / 390), calc(100dvh / 844), 1.1px); }
+  :root { --u: min(calc(100vw / 390), max(calc(100dvh / 844), calc(100vw / 390 * .92)), 1.1px); }
 }
 
 * { box-sizing: border-box; }
@@ -63,7 +66,7 @@ svg { display: block; }
   height: calc(35 * var(--u)); padding: 0 calc(12 * var(--u));
   display: flex; align-items: center;
   border-radius: calc(8 * var(--u)); background: var(--purple-deep);
-  font-size: calc(13 * var(--u)); font-weight: 600; white-space: nowrap;
+  font-size: max(12px, calc(13 * var(--u))); font-weight: 600; white-space: nowrap;
 }
 .top-logo { left: calc(16 * var(--u)); top: calc(58 * var(--u)); width: calc(102 * var(--u)); height: auto; }
 .wall-title {
@@ -80,7 +83,7 @@ svg { display: block; }
 }
 .wall-bar__name { font-size: calc(22 * var(--u)); font-weight: 600; }
 .wall-bar__count { font-size: calc(16 * var(--u)); font-weight: 500; color: var(--purple-deep); }
-.tags { margin: 0; left: 0; top: calc(738 * var(--u)); width: 100%; text-align: center; font-size: calc(12 * var(--u)); font-weight: 500; color: var(--yellow); }
+.tags { margin: 0; left: 0; top: calc(738 * var(--u)); width: 100%; text-align: center; font-size: max(12px, calc(12 * var(--u))); font-weight: 500; color: var(--yellow); }
 .logo-badge { left: calc(156 * var(--u)); top: calc(121 * var(--u)); width: calc(78 * var(--u)); height: auto; }
 .home-logo { margin: 0; left: calc(88 * var(--u)); top: calc(146 * var(--u)); width: calc(216 * var(--u)); }
 .home-logo img { display: block; width: 100%; height: auto; }
@@ -118,11 +121,11 @@ svg { display: block; }
   padding-left: calc(25 * var(--u));
   display: flex; flex-direction: column; justify-content: center;
   border-radius: calc(24 * var(--u));
-  background: linear-gradient(90deg, #7B4C9F 0%, #A97BA9 45%, #F7C4B4 100%);
+  background: linear-gradient(90deg, #7B4C9F 0%, #9A5A94 50%, #A85A86 100%);   /* white text stays above 4.5:1 along the whole pill */
   box-shadow: 0 calc(4 * var(--u)) calc(14 * var(--u)) rgba(30, 10, 60, .25);
 }
 .cta__title { font-size: calc(17 * var(--u)); font-weight: 700; line-height: 1.2; }
-.cta__sub { display: flex; align-items: center; gap: calc(6 * var(--u)); font-size: calc(14 * var(--u)); line-height: 1.3; }
+.cta__sub { display: flex; align-items: center; gap: calc(6 * var(--u)); font-size: max(13px, calc(14 * var(--u))); line-height: 1.3; }
 .cta__sub svg { width: calc(16 * var(--u)); height: calc(16 * var(--u)); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .cta__icon {
   position: absolute; left: 0; top: 0;
@@ -234,7 +237,7 @@ svg { display: block; }
 
 .powered {
   margin: 0; left: 0; top: calc(808 * var(--u)); width: 100%;
-  text-align: center; font-size: calc(12 * var(--u));
+  text-align: center; font-size: max(12px, calc(12 * var(--u)));
 }
 .powered { display: flex; align-items: center; justify-content: center; gap: calc(5 * var(--u)); }
 .powered img { height: calc(15 * var(--u)); width: auto; }
