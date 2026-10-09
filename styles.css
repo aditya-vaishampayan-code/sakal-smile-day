@@ -81,7 +81,8 @@ svg { display: block; }
 .wall-bar__name { font-size: calc(22 * var(--u)); font-weight: 600; }
 .wall-bar__count { font-size: calc(16 * var(--u)); font-weight: 500; color: var(--purple-deep); }
 .tags { margin: 0; left: 0; top: calc(738 * var(--u)); width: 100%; text-align: center; font-size: calc(12 * var(--u)); font-weight: 500; color: var(--yellow); }
-.home-logo { margin: 0; left: calc(88 * var(--u)); top: calc(138 * var(--u)); width: calc(216 * var(--u)); }
+.logo-badge { left: calc(156 * var(--u)); top: calc(121 * var(--u)); width: calc(78 * var(--u)); height: auto; }
+.home-logo { margin: 0; left: calc(88 * var(--u)); top: calc(146 * var(--u)); width: calc(216 * var(--u)); }
 .home-logo img { display: block; width: 100%; height: auto; }
 
 .carousel { left: 0; top: calc(425 * var(--u)); width: 100%; height: calc(212 * var(--u)); }
