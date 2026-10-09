@@ -176,6 +176,8 @@
     });
     CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
     track.scrollLeft = 0;
+    const n = photos.length + CFG.samples.length;
+    $('smile-count').textContent = `${n.toLocaleString('en-IN')} ${n === 1 ? 'Smile' : 'Smiles'}`;
   }
 
   /* Sample cards are drawn with the real frame so they match a saved photo. */
@@ -395,6 +397,7 @@
   }
 
   $('date-chip').textContent = CFG.dateChip;
+  $('home-tags').textContent = CFG.hashtags.join('');
   $('btn-shutter').addEventListener('click', startCountdown);
   $('btn-retake').addEventListener('click', retake);
   $('btn-add').addEventListener('click', addToWall);

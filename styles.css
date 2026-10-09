@@ -65,6 +65,22 @@ svg { display: block; }
   border-radius: calc(8 * var(--u)); background: var(--purple-deep);
   font-size: calc(13 * var(--u)); font-weight: 600; white-space: nowrap;
 }
+.top-logo { left: calc(16 * var(--u)); top: calc(58 * var(--u)); width: calc(102 * var(--u)); height: auto; }
+.wall-title {
+  margin: 0; left: 0; top: calc(316 * var(--u)); width: 100%;
+  text-align: center; font-family: var(--round); font-size: calc(28 * var(--u)); font-weight: 700;
+  line-height: calc(34 * var(--u)); text-transform: uppercase;
+}
+.wall-bar {
+  left: calc(21 * var(--u)); top: calc(366 * var(--u)); width: calc(348 * var(--u)); height: calc(52 * var(--u));
+  padding: 0 calc(22 * var(--u)) 0 calc(11 * var(--u));
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid var(--white); border-radius: calc(26 * var(--u));
+  background: linear-gradient(90deg, #6B3FA8 0%, #A97BA9 55%, #F7C4B4 100%);
+}
+.wall-bar__name { font-size: calc(22 * var(--u)); font-weight: 600; }
+.wall-bar__count { font-size: calc(16 * var(--u)); font-weight: 500; color: var(--purple-deep); }
+.tags { margin: 0; left: 0; top: calc(738 * var(--u)); width: 100%; text-align: center; font-size: calc(12 * var(--u)); font-weight: 500; color: var(--yellow); }
 .home-logo { margin: 0; left: calc(88 * var(--u)); top: calc(138 * var(--u)); width: calc(216 * var(--u)); }
 .home-logo img { display: block; width: 100%; height: auto; }
 
