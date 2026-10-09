@@ -71,7 +71,7 @@
 
   /* Paints card, yellow window border, text and stickers. With photo = null
    * the window is left transparent so the live video shows through. */
-  function drawFrame(ctx, { cardHeight, photo, background }) {
+  function drawFrame(ctx, { cardHeight, photo, background, mirror = true }) {
     const C = CFG.colors;
     const { card, win } = FRAME;
 
@@ -102,7 +102,7 @@
     ctx.restore();
 
     if (photo) {
-      drawCover(ctx, photo, inner.x, inner.y, inner.w, inner.h, true);
+      drawCover(ctx, photo, inner.x, inner.y, inner.w, inner.h, mirror);
     } else {
       ctx.clearRect(inner.x, inner.y, inner.w, inner.h);
     }
@@ -120,14 +120,7 @@
     // Emoji stickers
     stickers.forEach((s) => {
       if (!s.img.complete || !s.img.naturalWidth) return;
-      ctx.save();
-      ctx.translate(s.x, s.y);
-      ctx.rotate((s.rotate * Math.PI) / 180);
-      ctx.shadowColor = 'rgba(25, 8, 55, .3)';
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetY = 3;
-      ctx.drawImage(s.img, -s.size / 2, -s.size / 2, s.size, s.size);
-      ctx.restore();
+      ctx.drawImage(s.img, s.x - s.w / 2, s.y - s.h / 2, s.w, s.h);
     });
   }
 
@@ -181,8 +174,27 @@
       objectUrls.push(url);
       track.appendChild(tile(url, `Your Smile Frame, smile number ${photos.length - i}`));
     });
-    CFG.samples.forEach((s) => track.appendChild(tile(s.src, s.alt)));
+    CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
     track.scrollLeft = 0;
+  }
+
+  /* Sample cards are drawn with the real frame so they match a saved photo. */
+  function sampleTile(sample) {
+    const li = document.createElement('li');
+    const canvas = document.createElement('canvas');
+    canvas.width = 780; canvas.height = 975;
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', sample.alt);
+    li.appendChild(canvas);
+    const photo = new Image();
+    photo.src = sample.photo;
+    Promise.all([photo.decode(), stickersReady, fontsReady()]).then(() => {
+      const ctx = canvas.getContext('2d');
+      const k = canvas.width / FRAME.width;
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      drawFrame(ctx, { cardHeight: FRAME.cardHeightSaved, photo, background: true, mirror: false });
+    }).catch((e) => console.error('Sample card failed', e));
+    return li;
   }
 
   function tile(src, alt) {

@@ -48,11 +48,10 @@ svg { display: block; }
 .screen > * { position: absolute; }
 
 .skyline {
-  left: 0; top: calc(728 * var(--u)); width: 100%; height: calc(116 * var(--u));
+  left: 0; top: calc(667 * var(--u)); width: 100%; height: calc(177 * var(--u));
   background: url('assets/skyline.png') center / 100% 100% no-repeat;
   z-index: -1;
 }
-.skyline--faint { opacity: .75; }
 
 .blob { z-index: -2; border-radius: 50%; background: #6436AD; opacity: .55; }
 .blob--a { left: calc(-170 * var(--u)); top: calc(-40 * var(--u)); width: calc(420 * var(--u)); height: calc(290 * var(--u)); transform: rotate(-18deg); }
@@ -79,7 +78,7 @@ svg { display: block; }
 }
 .carousel__track::-webkit-scrollbar { display: none; }
 .carousel__track li { flex: 0 0 auto; width: calc(153 * var(--u)); height: calc(191 * var(--u)); scroll-snap-align: start; }
-.carousel__track img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.carousel__track img, .carousel__track canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
 .car-btn {
   position: absolute; z-index: 2; top: calc(87 * var(--u));
   width: calc(28 * var(--u)); height: calc(28 * var(--u)); padding: 0;
@@ -214,7 +213,8 @@ svg { display: block; }
   margin: 0; left: 0; top: calc(808 * var(--u)); width: 100%;
   text-align: center; font-size: calc(12 * var(--u));
 }
-.powered b { font-weight: 700; letter-spacing: .02em; }
+.powered { display: flex; align-items: center; justify-content: center; gap: calc(5 * var(--u)); }
+.powered img { height: calc(15 * var(--u)); width: auto; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

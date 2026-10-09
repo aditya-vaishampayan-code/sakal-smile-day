@@ -17,21 +17,19 @@ window.SMILE_CONFIG = {
     yellow: '#F3C11B',
     white: '#FFFFFF'
   },
-  // Emoji stickers around the frame, in design pixels (390-wide artboard,
-  // origin at the top of the frame area). Temporary Fluent 3D emoji (MIT)
-  // until the design team's sticker files arrive.
+  // Emoji stickers around the frame (design team files). Centre x/y and
+  // size in design pixels: 390-wide artboard, origin at the top of the frame.
   stickers: [
-    { src: 'assets/emoji/winking_face_with_tongue.webp', x: 54, y: 53, size: 85, rotate: -8 },
-    { src: 'assets/emoji/smiling_face_with_heart-eyes.webp', x: 339, y: 44, size: 87, rotate: 6 },
-    { src: 'assets/emoji/smiling_face_with_halo.webp', x: 355, y: 170, size: 56, rotate: 0 },
-    { src: 'assets/emoji/face_with_hand_over_mouth.webp', x: 41, y: 228, size: 56, rotate: 0 },
-    { src: 'assets/emoji/smiling_face_with_hearts.webp', x: 80, y: 348, size: 85, rotate: -6 },
-    { src: 'assets/emoji/smiling_face_with_sunglasses.webp', x: 333, y: 370, size: 94, rotate: 4 }
+    { src: 'assets/stickers/wink-tongue.png', x: 52, y: 55, w: 80, h: 80 },
+    { src: 'assets/stickers/heart-eyes.png', x: 342.5, y: 47, w: 89, h: 84 },
+    { src: 'assets/stickers/halo.png', x: 357.5, y: 167, w: 59, h: 58 },
+    { src: 'assets/stickers/hand-over-mouth.png', x: 39, y: 229.5, w: 52, h: 55 },
+    { src: 'assets/stickers/smiling-hearts.png', x: 81.5, y: 351, w: 83, h: 82 },
+    { src: 'assets/stickers/sunglasses.png', x: 332, y: 372.5, w: 90, h: 89 }
   ],
-  // Sample cards shown on the wall for the demo (cut from the design; replace
-  // with the design team's photos when they arrive).
+  // Sample photos shown on the wall for the demo, framed like a real Smile Frame
   samples: [
-    { src: 'assets/samples/sample-1.jpg', alt: 'Sample Smile Frame: a smiling woman making a heart with her hands' },
-    { src: 'assets/samples/sample-2.jpg', alt: 'Sample Smile Frame: a mother and two daughters smiling' }
+    { photo: 'assets/samples/photo-1.png', alt: 'Sample Smile Frame: a smiling woman making a heart with her hands' },
+    { photo: 'assets/samples/photo-2.png', alt: 'Sample Smile Frame: a mother and two daughters smiling' }
   ]
 };
