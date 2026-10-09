@@ -132,7 +132,14 @@ svg { display: block; }
   box-shadow: 0 calc(6 * var(--u)) calc(16 * var(--u)) rgba(30, 10, 60, .3);
 }
 .cta__icon svg { width: calc(38 * var(--u)); height: calc(38 * var(--u)); }
-.cta:active .cta__pill, .cta:active .cta__icon { transform: scale(.98); }
+.cta { --drag: 0; --fade: 1; }
+.cta__icon { touch-action: pan-y; cursor: grab; transform: translateX(calc(var(--drag) * var(--u))); }
+.cta--dragging .cta__icon { cursor: grabbing; transform: translateX(calc(var(--drag) * var(--u))) scale(1.06); }
+.cta--settle .cta__icon { transition: transform .25s cubic-bezier(.34, 1.4, .64, 1); }
+.cta__title, .cta__sub { opacity: var(--fade); }
+.cta__sub { background: linear-gradient(100deg, #fff 35%, rgba(255,255,255,.45) 50%, #fff 65%) 0 0 / 250% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer 2.4s linear infinite; }
+.cta__sub svg { stroke: #fff; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
 /* ---------- Camera ---------- */
 .ghost { z-index: -1; opacity: .14; filter: blur(1px); pointer-events: none; }
