@@ -385,20 +385,26 @@
    * A plain tap (or keyboard Enter) still follows the link. */
   const cta = document.querySelector('.cta');
   const knob = cta.querySelector('.cta__icon');
-  const KNOB = 68, TRAVEL = 316 - KNOB, GO_AT = 0.6;   // design pixels
+  const GO_AT = 0.6;                 // fraction of the track to pass before release opens the camera
   let drag = null, suppressClick = false;
 
+  /* --drag is in design pixels, so it scales with --u like everything else. */
   function setSlide(px, animate) {
     cta.classList.toggle('cta--settle', !!animate);
     cta.style.setProperty('--drag', px);
-    cta.style.setProperty('--fade', 1 - Math.min(px / (TRAVEL * 0.7), 1));
+    cta.style.setProperty('--fade', 1 - Math.min(px / (drag ? drag.travel * 0.7 : 1), 1));
   }
-  function resetSlide() { drag = null; cta.classList.remove('cta--dragging'); setSlide(0, false); }
+  function resetSlide() {
+    drag = null;
+    cta.classList.remove('cta--dragging');
+    cta.style.setProperty('--drag', 0);
+    cta.style.setProperty('--fade', 1);
+  }
 
   knob.addEventListener('pointerdown', (e) => {
     if (e.button) return;
-    const u = knob.getBoundingClientRect().width / KNOB;   // screen px per design px
-    drag = { id: e.pointerId, x: e.clientX, u, moved: false };
+    const k = knob.getBoundingClientRect(), c = cta.getBoundingClientRect();
+    drag = { id: e.pointerId, x: e.clientX, u: k.width / 68, travel: (c.width - k.width) / (k.width / 68), px: 0, moved: false };
     knob.setPointerCapture(e.pointerId);
     cta.classList.add('cta--dragging');
   });
@@ -406,24 +412,26 @@
     if (!drag || e.pointerId !== drag.id) return;
     const dx = e.clientX - drag.x;
     if (Math.abs(dx) > 4) drag.moved = true;
-    setSlide(Math.max(0, Math.min(dx / drag.u, TRAVEL)), false);
+    drag.px = Math.max(0, Math.min(dx / drag.u, drag.travel));
+    setSlide(drag.px, false);
   });
   const endDrag = (e) => {
     if (!drag || e.pointerId !== drag.id) return;
-    const px = parseFloat(cta.style.getPropertyValue('--drag')) || 0;
-    const moved = drag.moved;
+    const { px, travel, moved } = drag;
+    const go = e.type === 'pointerup' && px >= travel * GO_AT;
     cta.classList.remove('cta--dragging');
-    drag = null;
     if (moved) suppressClick = true;
-    if (e.type === 'pointerup' && px >= TRAVEL * GO_AT) {
-      setSlide(TRAVEL, true);
+    if (go) {
+      setSlide(travel, true);
       setTimeout(() => { location.hash = '#camera'; }, 160);
     } else {
       setSlide(0, true);
     }
+    drag = null;
   };
   knob.addEventListener('pointerup', endDrag);
   knob.addEventListener('pointercancel', endDrag);
+  cta.addEventListener('dragstart', (e) => e.preventDefault());   // no ghost link image
   cta.addEventListener('click', (e) => {
     if (suppressClick) { e.preventDefault(); suppressClick = false; }
   });
