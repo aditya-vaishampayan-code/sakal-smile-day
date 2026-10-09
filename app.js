@@ -1,4 +1,4 @@
-/* Pune Smile Day — Smile Wall + Smile Frame camera
+/* Pune Smile Day — Smile Wall + Smile Frame camera (Sakal design team layout)
  * Vanilla JS, no build step. Photos are stored on this device in IndexedDB.
  * See CLAUDE.md for how to swap the store for a shared backend.
  */
@@ -35,79 +35,187 @@
     };
   })();
 
+  /* ---------------- Frame drawing ----------------
+   * All numbers are design pixels on the 390-wide artboard, with the origin
+   * at the top of the frame area (artboard y = 192). The same code paints the
+   * live overlay over the camera and the saved photo. */
+  const FRAME = {
+    width: 390,
+    savedHeight: 487.5,       // 4:5, so 1080 x 1350 when saved
+    card: { x: 27, y: 30, w: 337 },
+    cardHeightLive: 487,      // taller on the camera screen, under the shutter
+    cardHeightSaved: 437,
+    win: { x: 68, y: 60, w: 255, h: 320, border: 5 },
+    tag: { y: 428, size: 30 },
+    sub: { y: 452, size: 14 }
+  };
+  const inner = {
+    x: FRAME.win.x + FRAME.win.border, y: FRAME.win.y + FRAME.win.border,
+    w: FRAME.win.w - FRAME.win.border * 2, h: FRAME.win.h - FRAME.win.border * 2
+  };
+
+  const stickers = CFG.stickers.map((s) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = s.src;
+    return { ...s, img };
+  });
+  const stickersReady = Promise.all(stickers.map((s) => s.img.decode().catch(() => {})));
+
+  function fontsReady() {
+    return Promise.all([
+      document.fonts.load(`700 ${FRAME.tag.size}px Fredoka`),
+      document.fonts.load(`500 ${FRAME.sub.size}px Poppins`)
+    ]).catch(() => {});
+  }
+
+  /* Paints card, yellow window border, text and stickers. With photo = null
+   * the window is left transparent so the live video shows through. */
+  function drawFrame(ctx, { cardHeight, photo, background }) {
+    const C = CFG.colors;
+    const { card, win } = FRAME;
+
+    if (background) {
+      ctx.fillStyle = C.purple;
+      ctx.fillRect(0, 0, FRAME.width, FRAME.savedHeight);
+    }
+
+    // Card with peach-to-purple gradient
+    ctx.save();
+    ctx.shadowColor = 'rgba(25, 8, 55, .45)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 8;
+    const g = ctx.createLinearGradient(0, card.y, 0, card.y + cardHeight);
+    g.addColorStop(0, C.peach);
+    g.addColorStop(1, C.cardEnd);
+    ctx.fillStyle = g;
+    ctx.fillRect(card.x, card.y, card.w, cardHeight);
+    ctx.restore();
+
+    // Yellow window border with a soft drop shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(40, 10, 60, .35)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = C.yellow;
+    ctx.fillRect(win.x, win.y, win.w, win.h);
+    ctx.restore();
+
+    if (photo) {
+      drawCover(ctx, photo, inner.x, inner.y, inner.w, inner.h, true);
+    } else {
+      ctx.clearRect(inner.x, inner.y, inner.w, inner.h);
+    }
+
+    // #SmileDay and subtitle
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = C.white;
+    ctx.font = `700 ${FRAME.tag.size}px Fredoka, Poppins, system-ui, sans-serif`;
+    ctx.fillText(CFG.hashtag, FRAME.width / 2, FRAME.tag.y);
+    ctx.fillStyle = C.yellow;
+    ctx.font = `500 ${FRAME.sub.size}px Poppins, system-ui, sans-serif`;
+    ctx.fillText(CFG.frameSubtitle, FRAME.width / 2, FRAME.sub.y);
+
+    // Emoji stickers
+    stickers.forEach((s) => {
+      if (!s.img.complete || !s.img.naturalWidth) return;
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate((s.rotate * Math.PI) / 180);
+      ctx.shadowColor = 'rgba(25, 8, 55, .3)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 3;
+      ctx.drawImage(s.img, -s.size / 2, -s.size / 2, s.size, s.size);
+      ctx.restore();
+    });
+  }
+
+  /* Cover-crop a video or image into a box; mirror for the selfie camera. */
+  function drawCover(ctx, src, x, y, w, h, mirror) {
+    const sw = src.videoWidth || src.naturalWidth || src.width;
+    const sh = src.videoHeight || src.naturalHeight || src.height;
+    const scale = Math.max(w / sw, h / sh);
+    const cw = w / scale, ch = h / scale;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    if (mirror) {
+      ctx.translate(x + w, y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, w, h);
+    } else {
+      ctx.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, x, y, w, h);
+    }
+    ctx.restore();
+  }
+
+  /* Live overlay on the camera screen. */
+  function paintOverlay() {
+    const canvas = $('frame-canvas');
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    const ctx = canvas.getContext('2d');
+    const k = canvas.width / FRAME.width;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    drawFrame(ctx, { cardHeight: FRAME.cardHeightLive, photo: null, background: false });
+  }
+
   /* ---------------- Wall ---------------- */
-  const TILTS = [-3, 2, -1.5, 3, -2, 1.5, 2.5, -3, 1, -1, 3, -2.5];
-  const TINTS = ['#FFE7B3', '#FFF1C9', '#FDD9B5'];
-  const FACES = ['#F28C38', '#FFC93C', '#F5A623', '#F7B267'];
   let objectUrls = [];
 
-  const smileySvg = (fill) =>
-    `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="${fill}"/><circle cx="8.6" cy="10" r="1.3" fill="#1F2A3A"/><circle cx="15.4" cy="10" r="1.3" fill="#1F2A3A"/><path d="M7.4 14c1.2 1.9 2.8 2.7 4.6 2.7s3.4-.8 4.6-2.7" fill="none" stroke="#1F2A3A" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-
   async function renderWall() {
-    const grid = $('wall-grid');
+    const track = $('wall-grid');
     objectUrls.forEach(URL.revokeObjectURL);
     objectUrls = [];
     let photos = [];
     try { photos = await store.list(); } catch (e) { console.error('Could not read photos', e); }
 
-    $('smile-count').textContent = photos.length.toLocaleString('en-IN');
-    grid.innerHTML = '';
-
-    if (!photos.length) {
-      // Placeholder tiles so the wall never looks empty
-      for (let i = 0; i < 3; i++) grid.appendChild(polaroid({ index: i, placeholder: true }));
-      const p = document.createElement('p');
-      p.className = 'wall__empty';
-      p.textContent = 'Be the first smile on the wall!';
-      grid.appendChild(p);
-      return;
-    }
-
+    track.innerHTML = '';
     photos.forEach((photo, i) => {
       const url = URL.createObjectURL(photo.blob);
       objectUrls.push(url);
-      grid.appendChild(polaroid({
-        index: i,
-        url,
-        number: photos.length - i,
-        isNew: i === 0 && Date.now() - photo.createdAt < 2 * 60 * 1000
-      }));
+      track.appendChild(tile(url, `Your Smile Frame, smile number ${photos.length - i}`));
     });
+    CFG.samples.forEach((s) => track.appendChild(tile(s.src, s.alt)));
+    track.scrollLeft = 0;
   }
 
-  function polaroid({ index, url, number, isNew, placeholder }) {
-    const fig = document.createElement('figure');
-    fig.className = 'polaroid' + (index % 2 ? ' polaroid--tape' : '');
-    fig.style.setProperty('--tilt', TILTS[index % TILTS.length] + 'deg');
-    fig.style.animationDelay = Math.min(index, 12) * 40 + 'ms';
-    if (isNew) {
-      const b = document.createElement('span');
-      b.className = 'badge-new';
-      b.textContent = 'JUST NOW';
-      fig.appendChild(b);
-    }
-    if (placeholder) {
-      const ph = document.createElement('div');
-      ph.className = 'ph';
-      ph.style.background = TINTS[index % TINTS.length];
-      ph.innerHTML = smileySvg(FACES[index % FACES.length]);
-      fig.appendChild(ph);
-    } else {
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = `Smile #${number}`;
-      img.loading = 'lazy';
-      fig.appendChild(img);
-    }
-    const cap = document.createElement('figcaption');
-    cap.textContent = placeholder ? 'Your smile here' : `Smile #${number}`;
-    fig.appendChild(cap);
-    return fig;
+  function tile(src, alt) {
+    const li = document.createElement('li');
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = alt;
+    img.loading = 'lazy';
+    li.appendChild(img);
+    return li;
+  }
+
+  function scrollWall(dir) {
+    const track = $('wall-grid');
+    const item = track.querySelector('li');
+    if (!item) return;
+    const step = item.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0);
+    const max = track.scrollWidth - track.clientWidth;
+    let to = track.scrollLeft + dir * step;
+    if (to > max + 1) to = 0;          // wrap around at the ends
+    else if (to < -1) to = max;
+    track.scrollTo({ left: to, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
 
   /* ---------------- Camera ---------------- */
   const video = $('video');
+  const result = document.createElement('img');
+  result.id = 'result';
+  result.className = 'result';
+  result.alt = 'Your Smile Frame photo';
+  result.hidden = true;
+  $('stage').after(result);
+
   let stream = null;
   let phase = 'ready';           // ready | counting | review
   let resultBlob = null;
@@ -121,7 +229,7 @@
     }
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } },
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1600 } },
         audio: false
       });
       video.srcObject = stream;
@@ -150,14 +258,17 @@
 
   function setPhase(next) {
     phase = next;
+    const review = next === 'review';
     $('controls-ready').hidden = next !== 'ready';
     $('controls-counting').hidden = next !== 'counting';
-    $('controls-review').hidden = next !== 'review';
+    $('controls-review').hidden = !review;
     $('countdown').hidden = next !== 'counting';
-    $('face-guide').hidden = next === 'review';
-    $('result').hidden = next !== 'review';
-    $('frame-card').hidden = next === 'review';
-    $('camera-title').textContent = next === 'review' ? 'Looking great!' : 'Look at the camera & smile big';
+    $('stage').hidden = review;
+    result.hidden = !review;
+    const title = $('camera-title');
+    title.innerHTML = review ? 'Looking great!' : 'Look at the camera<br>&amp; smile big';
+    title.classList.toggle('camera__title--single', review);
+    if (!review) requestAnimationFrame(paintOverlay);
   }
 
   function startCountdown() {
@@ -188,7 +299,7 @@
       resultBlob = await composeFrame(video);
       if (resultUrl) URL.revokeObjectURL(resultUrl);
       resultUrl = URL.createObjectURL(resultBlob);
-      $('result').src = resultUrl;
+      result.src = resultUrl;
       setPhase('review');
       $('btn-add').disabled = false;
     } catch (e) {
@@ -198,78 +309,18 @@
     }
   }
 
-  /* Draws the branded Smile Frame onto a canvas and returns a JPEG blob. */
+  /* Draws the Smile Frame onto a canvas and returns a 1080 x 1350 JPEG blob. */
   async function composeFrame(source) {
+    await Promise.all([fontsReady(), stickersReady]);
     const { width: W, height: H } = CFG.output;
-    const C = CFG.colors;
-    try {
-      await Promise.all([
-        document.fonts.load(`800 120px "Bricolage Grotesque"`),
-        document.fonts.load(`500 44px "DM Sans"`)
-      ]);
-    } catch (_) { /* fall back to system fonts */ }
-
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
-
-    // Card background
-    ctx.fillStyle = C.cream;
-    ctx.fillRect(0, 0, W, H);
-
-    // Circular photo, cover-cropped and mirrored to match the preview
-    const cx = W / 2, cy = 560, r = 420, ring = 56;
-    const vw = source.videoWidth, vh = source.videoHeight;
-    const side = Math.min(vw, vh);
-    const sx = (vw - side) / 2, sy = (vh - side) / 2;
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.translate(cx, cy);
-    ctx.scale(-1, 1);
-    ctx.drawImage(source, sx, sy, side, side, -r, -r, r * 2, r * 2);
-    ctx.restore();
-
-    // Amber ring
-    ctx.beginPath();
-    ctx.arc(cx, cy, r + ring / 2 - 1, 0, Math.PI * 2);
-    ctx.lineWidth = ring;
-    ctx.strokeStyle = C.amber;
-    ctx.stroke();
-
-    // Smiley sticker, top-right
-    drawSmiley(ctx, W - 170, 170, 105, C.orange, C.navy, 0.25);
-
-    // Text
-    ctx.textAlign = 'center';
-    ctx.fillStyle = C.navy;
-    ctx.font = `800 128px "Bricolage Grotesque", system-ui, sans-serif`;
-    ctx.fillText(CFG.hashtag, W / 2, 1180);
-    ctx.fillStyle = C.grey;
-    ctx.font = `500 46px "DM Sans", system-ui, sans-serif`;
-    ctx.fillText(`${CFG.eventName} · ${CFG.eventDateShort}`, W / 2, 1258);
-
+    const k = W / FRAME.width;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    drawFrame(ctx, { cardHeight: FRAME.cardHeightSaved, photo: source, background: true });
     return new Promise((res, rej) =>
       canvas.toBlob((b) => (b ? res(b) : rej(new Error('toBlob failed'))), 'image/jpeg', 0.9));
-  }
-
-  function drawSmiley(ctx, x, y, radius, fill, ink, rotate) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rotate);
-    const k = radius / 11; // icon is drawn on a 24-unit grid, r = 11
-    ctx.fillStyle = fill;
-    ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = ink;
-    ctx.beginPath(); ctx.arc(-3.4 * k, -2 * k, 1.3 * k, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(3.4 * k, -2 * k, 1.3 * k, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = ink; ctx.lineWidth = 1.5 * k; ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-4.6 * k, 2 * k);
-    ctx.bezierCurveTo(-3.4 * k, 5.6 * k, 3.4 * k, 5.6 * k, 4.6 * k, 2 * k);
-    ctx.stroke();
-    ctx.restore();
   }
 
   function fileName() { return `pune-smile-day-${Date.now()}.jpg`; }
@@ -320,7 +371,6 @@
     const view = location.hash === '#camera' ? 'camera' : 'wall';
     $('view-wall').hidden = view !== 'wall';
     $('view-camera').hidden = view !== 'camera';
-    document.body.style.background = view === 'wall' ? '#FFF8E7' : '#1F2A3A';
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
     if (view === 'camera') {
       setPhase('ready');
@@ -332,13 +382,18 @@
     window.scrollTo(0, 0);
   }
 
+  $('date-chip').textContent = CFG.dateChip;
   $('btn-shutter').addEventListener('click', startCountdown);
   $('btn-retake').addEventListener('click', retake);
   $('btn-add').addEventListener('click', addToWall);
   $('btn-download').addEventListener('click', download);
   $('btn-share').addEventListener('click', share);
   $('btn-retry-camera').addEventListener('click', startCamera);
+  $('car-prev').addEventListener('click', () => scrollWall(-1));
+  $('car-next').addEventListener('click', () => scrollWall(1));
   window.addEventListener('hashchange', route);
+  window.addEventListener('resize', () => { if (phase !== 'review') paintOverlay(); });
+  stickersReady.then(() => fontsReady()).then(paintOverlay);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && location.hash === '#camera') stopCamera();
     else if (!document.hidden && location.hash === '#camera' && !stream && phase === 'ready') startCamera();

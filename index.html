@@ -3,124 +3,94 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#FFF8E7">
-  <title>Pune Smile Day — Smile Wall</title>
+  <meta name="theme-color" content="#5B32A3">
+  <title>Pune Smile Day · Smile Wall</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Poppins:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <!-- ============ HOME: SMILE WALL ============ -->
-  <main id="view-wall" class="view wall" data-view="wall">
-    <header class="wall__top">
-      <div class="logo-slot">[SAKAL LOGO]</div>
-      <div class="date-chip">1 Nov · 9:00 AM</div>
-    </header>
+  <main id="view-wall" class="screen screen--home" data-view="wall">
+    <div class="blob blob--a" aria-hidden="true"></div>
+    <div class="blob blob--b" aria-hidden="true"></div>
+    <div class="skyline" aria-hidden="true"></div>
 
-    <section class="wall__hero">
-      <div>
-        <p class="kicker">PUNE SMILE DAY</p>
-        <h1 class="wall__title">The Wall<br>of Smiles</h1>
-      </div>
-      <svg class="hero-smiley" viewBox="0 0 24 24" aria-hidden="true"><use href="#smiley"/></svg>
+    <p class="date-chip" id="date-chip">1 Nov- 9:00 AM</p>
+    <h1 class="home-logo"><img src="assets/pune-smile-day-logo.svg" alt="Pune Smile Day" width="216" height="154"></h1>
+
+    <section class="carousel" aria-label="Photos on the Smile Wall">
+      <button type="button" class="car-btn car-btn--prev" id="car-prev" aria-label="Previous photos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <ul class="carousel__track" id="wall-grid" aria-live="polite"></ul>
+      <button type="button" class="car-btn car-btn--next" id="car-next" aria-label="More photos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
     </section>
 
-    <div class="counter">
-      <span class="counter__label">Smile Wall</span>
-      <span class="counter__value"><span id="smile-count">0</span> smiles</span>
-    </div>
-
-    <section id="wall-grid" class="wall__grid" aria-label="Photos on the Smile Wall" aria-live="polite"></section>
-
-    <footer class="wall__footer">
-      <a href="#camera" class="cta" aria-label="Make your Smile Frame — open the camera">
-        <span class="cta__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-camera"/></svg></span>
-        <span class="cta__text">
-          <span class="cta__title">Make your Smile Frame</span>
-          <span class="cta__sub">Your photo joins the wall</span>
+    <a href="#camera" class="cta" aria-label="Make your Smile Frame. Your photo joins the wall">
+      <span class="cta__pill">
+        <span class="cta__title">Make your Smile Frame</span>
+        <span class="cta__sub">Your photo joins the wall
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l6 6-6 6M13 6l6 6-6 6"/></svg>
         </span>
-      </a>
-      <p class="tags">#SmileDay&nbsp;&nbsp;#PuneSmileDay</p>
-    </footer>
+      </span>
+      <span class="cta__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-camera"/></svg></span>
+    </a>
   </main>
 
   <!-- ============ CAMERA: SMILE FRAME ============ -->
-  <main id="view-camera" class="view camera" data-view="camera" hidden>
-    <header class="camera__top">
-      <a href="#wall" class="back-btn">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        <span>Smile Wall</span>
-      </a>
-      <span class="live-tag">LIVE</span>
-    </header>
+  <main id="view-camera" class="screen screen--camera" data-view="camera" hidden>
+    <img class="ghost ghost--a" src="assets/emoji/grinning_squinting_face.webp" alt="" aria-hidden="true">
+    <img class="ghost ghost--b" src="assets/emoji/smiling_face_with_heart-eyes.webp" alt="" aria-hidden="true">
+    <div class="skyline skyline--faint" aria-hidden="true"></div>
 
-    <h1 class="camera__title" id="camera-title">Look at the camera &amp; smile big</h1>
+    <a href="#wall" class="back-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6"/></svg>
+      <span>Smile Wall</span>
+    </a>
+    <span class="live-tag">LIVE</span>
 
-    <img id="result" class="result-card" alt="Your Smile Frame photo" hidden>
+    <h1 class="camera__title" id="camera-title">Look at the camera<br>&amp; smile big</h1>
 
-    <div class="frame-card" id="frame-card">
-      <div class="lens">
-        <video id="video" playsinline muted autoplay></video>
-        <div id="face-guide" class="face-guide" aria-hidden="true"></div>
-        <div id="countdown" class="countdown" hidden aria-live="assertive"></div>
-        <div id="flash" class="flash" aria-hidden="true"></div>
-        <div id="camera-error" class="camera-error" hidden>
-          <p id="camera-error-msg">We couldn't open the camera.</p>
-          <button type="button" id="btn-retry-camera" class="btn btn--light">Try again</button>
-        </div>
-      </div>
-      <svg class="frame-sticker" viewBox="0 0 24 24" aria-hidden="true"><use href="#smiley-orange"/></svg>
-      <div class="frame-text">
-        <p class="frame-text__tag">#SmileDay</p>
-        <p class="frame-text__sub">Pune Smile Day · 1 Nov</p>
+    <div class="stage" id="stage">
+      <video id="video" class="stage__video" playsinline muted autoplay></video>
+      <canvas id="frame-canvas" class="stage__frame" aria-hidden="true"></canvas>
+      <div id="countdown" class="stage__countdown" hidden aria-live="assertive"></div>
+      <div id="flash" class="stage__flash" aria-hidden="true"></div>
+      <div id="camera-error" class="stage__error" hidden>
+        <p id="camera-error-msg">We couldn’t open the camera.</p>
+        <button type="button" id="btn-retry-camera" class="btn btn--download">Try again</button>
       </div>
     </div>
 
-    <div class="controls">
-      <div id="controls-ready" class="controls__ready">
-        <button type="button" id="btn-shutter" class="shutter" aria-label="Capture photo">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-camera"/></svg>
-        </button>
-        <span class="hint">Tap to capture · 3-second countdown</span>
-      </div>
 
-      <p id="controls-counting" class="hold" hidden>Hold that smile…</p>
-
-      <div id="controls-review" class="controls__review" hidden>
-        <button type="button" id="btn-add" class="btn btn--primary">
-          Add to the Smile Wall
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-        <div class="review-row">
-          <button type="button" id="btn-retake" class="btn btn--ghost">Retake</button>
-          <button type="button" id="btn-download" class="btn btn--light">Download</button>
-          <button type="button" id="btn-share" class="btn btn--dark">Share</button>
-        </div>
-      </div>
+    <div id="controls-ready">
+      <button type="button" id="btn-shutter" class="shutter" aria-label="Capture photo, 3-second countdown">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-camera"/></svg>
+      </button>
+      <p class="hint">Tap to capture - 3 second countdown</p>
     </div>
 
-    <p class="tags tags--dark">#SmileDay&nbsp;&nbsp;#PuneSmileDay</p>
+    <p id="controls-counting" class="hold" hidden>Hold that smile…</p>
+
+    <div id="controls-review" hidden>
+      <button type="button" id="btn-add" class="btn btn--add">Add to the Smile Wall</button>
+      <button type="button" id="btn-retake" class="btn btn--retake">Retake</button>
+      <button type="button" id="btn-download" class="btn btn--download">Download</button>
+      <button type="button" id="btn-share" class="btn btn--share">Share</button>
+    </div>
+
+    <p class="powered">powered by <b>SAKAL</b></p>
   </main>
 
-  <!-- Reusable SVG symbols -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <symbol id="smiley" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="11" fill="#F5A623"/>
-      <circle cx="8.6" cy="10" r="1.3" fill="#1F2A3A"/>
-      <circle cx="15.4" cy="10" r="1.3" fill="#1F2A3A"/>
-      <path d="M7.4 14c1.2 1.9 2.8 2.7 4.6 2.7s3.4-.8 4.6-2.7" fill="none" stroke="#1F2A3A" stroke-width="1.5" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="smiley-orange" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="11" fill="#F28C38"/>
-      <circle cx="8.6" cy="10" r="1.3" fill="#1F2A3A"/>
-      <circle cx="15.4" cy="10" r="1.3" fill="#1F2A3A"/>
-      <path d="M7.4 14c1.2 1.9 2.8 2.7 4.6 2.7s3.4-.8 4.6-2.7" fill="none" stroke="#1F2A3A" stroke-width="1.5" stroke-linecap="round"/>
-    </symbol>
     <symbol id="icon-camera" viewBox="0 0 24 24">
-      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="12" cy="13" r="3.8" fill="none" stroke="currentColor" stroke-width="1.8"/>
     </symbol>
   </svg>
 
