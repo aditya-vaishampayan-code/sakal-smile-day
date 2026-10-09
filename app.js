@@ -31,9 +31,22 @@
     };
     return {
       list: () => tx('readonly', (s) => s.getAll()).then((rows) => (rows || []).sort((a, b) => b.createdAt - a.createdAt)),
-      add: (blob) => tx('readwrite', (s) => s.add({ blob, createdAt: Date.now() }))
+      add: async (blob) => {
+        const thumb = await makeThumb(blob).catch(() => null);   // small copy for the wall
+        return tx('readwrite', (s) => s.add({ blob, thumb, createdAt: Date.now() }));
+      }
     };
   })();
+
+  /* 360 x 450 JPEG of a saved photo, so the wall doesn't decode 1080 x 1350 images. */
+  async function makeThumb(blob) {
+    const bmp = await createImageBitmap(blob);
+    const canvas = document.createElement('canvas');
+    canvas.width = 360; canvas.height = 450;
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
+    return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('thumb failed'))), 'image/jpeg', 0.85));
+  }
 
   /* ---------------- Frame drawing ----------------
    * All numbers are design pixels on the 390-wide artboard, with the origin
@@ -161,28 +174,43 @@
   /* ---------------- Wall ---------------- */
   let objectUrls = [];
 
+  const PAGE = 12;                 // photos added to the carousel at a time
+  let allPhotos = [], shown = 0;
+
   async function renderWall() {
     const track = $('wall-grid');
     objectUrls.forEach(URL.revokeObjectURL);
     objectUrls = [];
-    let photos = [];
-    try { photos = await store.list(); } catch (e) { console.error('Could not read photos', e); }
+    allPhotos = [];
+    try { allPhotos = await store.list(); } catch (e) { console.error('Could not read photos', e); }
 
     track.innerHTML = '';
-    photos.forEach((photo, i) => {
-      const url = URL.createObjectURL(photo.blob);
-      objectUrls.push(url);
-      track.appendChild(tile(url, `Your Smile Frame, smile number ${photos.length - i}`));
-    });
-    CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
+    shown = 0;
+    showMore();
     track.scrollLeft = 0;
-    const n = photos.length + CFG.samples.length;
+    const n = allPhotos.length + CFG.samples.length;
     $('smile-count').textContent = `${n.toLocaleString('en-IN')} ${n === 1 ? 'Smile' : 'Smiles'}`;
+  }
+
+  /* Adds the next page of photos; the sample cards follow the last real photo. */
+  function showMore() {
+    const track = $('wall-grid');
+    const next = allPhotos.slice(shown, shown + PAGE);
+    next.forEach((photo, i) => {
+      const url = URL.createObjectURL(photo.thumb || photo.blob);
+      objectUrls.push(url);
+      track.appendChild(tile(url, `Your Smile Frame, smile number ${allPhotos.length - shown - i}`));
+    });
+    shown += next.length;
+    if (shown >= allPhotos.length && !track.querySelector('[data-sample]')) {
+      CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
+    }
   }
 
   /* Sample cards are drawn with the real frame so they match a saved photo. */
   function sampleTile(sample) {
     const li = document.createElement('li');
+    li.dataset.sample = '';
     const canvas = document.createElement('canvas');
     canvas.width = 780; canvas.height = 975;
     canvas.setAttribute('role', 'img');
@@ -214,6 +242,7 @@
     const item = track.querySelector('li');
     if (!item) return;
     const step = item.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0);
+    if (dir > 0 && shown < allPhotos.length) showMore();
     const max = track.scrollWidth - track.clientWidth;
     let to = track.scrollLeft + dir * step;
     if (to > max + 1) to = 0;          // wrap around at the ends
@@ -461,6 +490,10 @@
   $('btn-download').addEventListener('click', download);
   $('btn-share').addEventListener('click', share);
   $('btn-retry-camera').addEventListener('click', startCamera);
+  $('wall-grid').addEventListener('scroll', () => {
+    const t = $('wall-grid');
+    if (shown < allPhotos.length && t.scrollWidth - t.scrollLeft - t.clientWidth < 400) showMore();
+  }, { passive: true });
   $('car-prev').addEventListener('click', () => scrollWall(-1));
   $('car-next').addEventListener('click', () => scrollWall(1));
   window.addEventListener('hashchange', route);

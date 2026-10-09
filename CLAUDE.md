@@ -14,15 +14,16 @@ Hashtags: `#SmileDay` `#PuneSmileDay`.
 - Plain HTML/CSS/JS, no build step. `index.html` + `styles.css` + `config.js` + `app.js`.
 - Hash routing: `#wall` (home) and `#camera`.
 - The camera uses `getUserMedia` (front camera, mirrored). The 3-second countdown and the frame are drawn on a `<canvas>` (`composeFrame()` in `app.js`). The output is a 1080×1350 JPEG.
-- Photos are stored **locally in IndexedDB** through a tiny `store` object with `list()` and `add(blob)`. This is the seam for a real backend.
+- Photos are stored **locally in IndexedDB** through a tiny `store` object with `list()` and `add(blob)`; `add` also saves a 360 x 450 thumbnail and the wall shows those, 12 at a time. This is the seam for a real backend.
 - Share uses the Web Share API with files, and falls back to a download.
 
 ## Design system (keep it consistent)
-- Colours: cream `#FFF8E7`, amber `#F5A623`, soft amber `#FFC93C`, orange `#F28C38`, rust text `#B45309`, navy `#1F2A3A`, grey `#4B5563`.
-- Fonts: Bricolage Grotesque 800 for display, DM Sans for body, Caveat for the polaroid captions.
-- Motifs: flat smiley faces (amber or orange circle, navy eyes and smile), tilted polaroids with amber tape, a round amber ring frame, pill buttons.
-- Mobile first. Touch targets ≥ 44px. Respect `prefers-reduced-motion`. Text contrast ≥ 4.5:1.
-- The Claude Design canvas "Smile Day Booth" holds the reference mockups (390×844).
+- Source of truth: the Sakal design team's 390 x 844 mockups. Every screen is that artboard; `--u` in `styles.css` is one design pixel (width scale, never below 0.92 of it on short viewports, so the page scrolls rather than shrinks).
+- Colours (tokens in `styles.css`, mirrored in `config.js` for the canvas): purple `#5B32A3`, deep purple `#402372`, yellow `#F3C11B`, peach `#FFCCB5`, red `#DA2627` (LIVE tag), white. Camera button gradient runs `#7B4C9F` to `#A85A86` so white text stays above 4.5:1.
+- Fonts: Fredoka 600/700 for headings and the frame hashtag, Poppins for body and buttons.
+- Assets live in `assets/`: Pune Smile Day logo (SVG), Sakal logo, skyline, emoji stickers, sample photos.
+- Motifs: purple background with soft blobs and the Pune skyline, peach-to-purple photo cards with a yellow window and emoji stickers, pill buttons, a camera button you hold and slide right to open the camera (tap still works).
+- Mobile first. Touch targets >= 44px. Respect `prefers-reduced-motion`. Text contrast >= 4.5:1.
 
 ## Next steps, in priority order
 1. **Shared backend.** Replace `store` in `app.js` with API calls, keeping the `list()` / `add(blob)` shape. Suggested stack: Supabase (Storage bucket + `photos` table: id, url, created_at, status) or Firebase (Storage + Firestore). Upload the JPEG, insert a row with `status='pending'`, and have the wall read `status='approved'`, newest first and paginated.
