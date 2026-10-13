@@ -243,6 +243,67 @@ svg { display: block; }
 .powered { display: flex; align-items: center; justify-content: center; gap: calc(5 * var(--u)); }
 .powered img { height: calc(15 * var(--u)); width: auto; }
 
+/* ---------- Tablets ----------
+ * Phones use the fixed 390 x 844 artboard. From 768px wide (and at least 600px tall,
+ * so landscape phones keep the phone layout) the home screen reflows with grid and
+ * shows more of the wall, and the camera artboard scales up to fit the height.
+ * Sizes are still design pixels, so the --u scale below sets how large things are. */
+@media (min-width: 768px) and (min-height: 600px) {
+  .screen--camera {
+    --u: min(calc(100vw / 390), calc(100vh / 844), 1.5px);
+    --u: min(calc(100vw / 390), calc(100dvh / 844), 1.5px);
+  }
+
+  /* Portrait: one centred column, a wider carousel */
+  .screen--home {
+    --u: clamp(1.1px, calc(100vw / 640), 1.45px);
+    width: 100%; max-width: calc(760 * var(--u));
+    height: auto; min-height: 100vh; min-height: 100dvh;
+    padding: calc(36 * var(--u)) calc(24 * var(--u)) calc(120 * var(--u));
+    display: grid; grid-template-columns: 1fr 1fr;
+    justify-items: center; align-content: center; row-gap: calc(14 * var(--u));
+    grid-template-areas:
+      "toplogo date" "badge badge" "logo logo" "title title" "bar bar"
+      "car car" "cta cta" "tags tags" "powered powered";
+  }
+  .screen--home > :not(.skyline):not(.blob) { position: relative; left: auto; top: auto; }
+  .screen--home .skyline { top: auto; bottom: 0; height: auto; aspect-ratio: 390 / 177; }
+
+  .top-logo { grid-area: toplogo; justify-self: start; }
+  .date-chip { grid-area: date; justify-self: end; }
+  .logo-badge { grid-area: badge; margin-top: calc(20 * var(--u)); }
+  .home-logo { grid-area: logo; width: calc(250 * var(--u)); }
+  .wall-title { grid-area: title; width: 100%; margin-top: calc(10 * var(--u)); }
+  .wall-bar { grid-area: bar; width: min(100%, calc(480 * var(--u))); }
+  .carousel { grid-area: car; width: calc(100% + 48 * var(--u)); }
+  .cta { grid-area: cta; margin-top: calc(8 * var(--u)); }
+  .tags { grid-area: tags; width: 100%; }
+  .screen--home .powered { grid-area: powered; width: 100%; }
+}
+
+/* Landscape tablets: logo on the left, the wall and the camera button on the right */
+@media (min-width: 900px) and (min-height: 600px) and (orientation: landscape) {
+  .screen--home {
+    --u: clamp(1.1px, min(calc(100vw / 820), calc(100dvh / 640)), 1.45px);
+    max-width: calc(1000 * var(--u));
+    grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+    padding-bottom: calc(80 * var(--u));
+    grid-template-areas:
+      "toplogo date"
+      "badge   title"
+      "logo    bar"
+      "logo    car"
+      "logo    cta"
+      "logo    tags"
+      "powered powered";
+  }
+  .logo-badge { align-self: end; margin-top: 0; }
+  .home-logo { align-self: start; width: calc(260 * var(--u)); }
+  .wall-title { margin-top: 0; }
+  .carousel { width: 100%; }
+  .screen--home .skyline { opacity: .9; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

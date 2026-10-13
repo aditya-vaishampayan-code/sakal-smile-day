@@ -18,7 +18,7 @@ Hashtags: `#SmileDay` `#PuneSmileDay`.
 - Share uses the Web Share API with files, and falls back to a download.
 
 ## Design system (keep it consistent)
-- Source of truth: the Sakal design team's 390 x 844 mockups. Every screen is that artboard; `--u` in `styles.css` is one design pixel (width scale, never below 0.92 of it on short viewports, so the page scrolls rather than shrinks).
+- Source of truth: the Sakal design team's 390 x 844 mockups. Every screen is that artboard; `--u` in `styles.css` is one design pixel (width scale, never below 0.92 of it on short viewports, so the page scrolls rather than shrinks). From 768px wide and 600px tall (tablets) the home screen reflows with grid (one column in portrait, logo left and wall right in landscape) and the camera artboard scales up to fit the height; see the Tablets block at the end of `styles.css`.
 - Colours (tokens in `styles.css`, mirrored in `config.js` for the canvas): purple `#5B32A3`, deep purple `#402372`, yellow `#F3C11B`, peach `#FFCCB5`, red `#DA2627` (LIVE tag), white. Camera button gradient runs `#7B4C9F` to `#A85A86` so white text stays above 4.5:1.
 - Fonts: Fredoka 600/700 for headings and the frame hashtag, Poppins for body and buttons.
 - Assets live in `assets/`: Pune Smile Day logo (SVG), Sakal logo, skyline, emoji stickers, sample photos.
