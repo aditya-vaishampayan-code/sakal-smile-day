@@ -1,6 +1,6 @@
 /* Pune Smile Day — Smile Wall + Smile Frame camera (Sakal design team layout)
- * Vanilla JS, no build step. Photos are stored on this device in IndexedDB.
- * See CLAUDE.md for how to swap the store for a shared backend.
+ * Vanilla JS, no build step. Photos go to the shared Smile Wall through the
+ * Cloudflare Worker in worker/index.js (same origin, /api/*).
  */
 (() => {
   'use strict';
@@ -8,44 +8,49 @@
   const CFG = window.SMILE_CONFIG;
   const $ = (id) => document.getElementById(id);
 
-  /* ---------------- Photo store (IndexedDB) ----------------
-   * The rest of the app only uses store.list() / store.add(blob).
-   * Replace this object with API calls to make the wall shared. */
-  const store = (() => {
-    const DB = 'smile-day', STORE = 'photos';
-    let dbp;
-    const open = () => dbp || (dbp = new Promise((res, rej) => {
-      const req = indexedDB.open(DB, 1);
-      req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
-      req.onsuccess = () => res(req.result);
-      req.onerror = () => rej(req.error);
-    }));
-    const tx = async (mode, fn) => {
-      const db = await open();
-      return new Promise((res, rej) => {
-        const t = db.transaction(STORE, mode);
-        const r = fn(t.objectStore(STORE));
-        t.oncomplete = () => res(r && r.result);
-        t.onerror = () => rej(t.error);
-      });
-    };
-    return {
-      list: () => tx('readonly', (s) => s.getAll()).then((rows) => (rows || []).sort((a, b) => b.createdAt - a.createdAt)),
-      add: async (blob) => {
-        const thumb = await makeThumb(blob).catch(() => null);   // small copy for the wall
-        return tx('readwrite', (s) => s.add({ blob, thumb, createdAt: Date.now() }));
-      }
-    };
-  })();
+  /* ---------------- Smile Wall API (Cloudflare Worker, see worker/index.js) ---------------- */
+  class ApiError extends Error {
+    constructor(status, code) { super(code || `HTTP ${status}`); this.status = status; this.code = code; }
+  }
+  async function call(method, path, { body, headers } = {}) {
+    const res = await fetch(path, { method, body, headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, data.error);
+    return data;
+  }
+  const api = {
+    wall: (before) => call('GET', `/api/wall${before ? `?before=${before}` : ''}`),
+    add: (blob) => call('POST', '/api/photos', {
+      body: blob, headers: { 'Content-Type': 'image/jpeg', 'X-Consent': CFG.consentVersion }
+    }),
+    remove: (id, token) => call('DELETE', `/api/photos/${id}`, { headers: { 'X-Delete-Token': token } }),
+    report: (id) => call('POST', `/api/photos/${id}/report`)
+  };
 
-  /* 360 x 450 JPEG of a saved photo, so the wall doesn't decode 1080 x 1350 images. */
-  async function makeThumb(blob) {
+  /* Photos added from this phone, with the secret that lets this phone delete them.
+   * localStorage can be missing (private mode), so every access is guarded. */
+  const mine = {
+    KEY: 'smileday-mine',
+    all() {
+      try { return JSON.parse(localStorage.getItem(this.KEY)) || []; } catch { return []; }
+    },
+    save(list) {
+      try { localStorage.setItem(this.KEY, JSON.stringify(list)); } catch {}
+    },
+    add(photo) { this.save([photo, ...this.all()]); },
+    drop(id) { this.save(this.all().filter((p) => p.id !== id)); },
+    get(id) { return this.all().find((p) => p.id === id); }
+  };
+
+  /* Smaller copy of the saved photo for the wall, so uploads are quick on mobile data. */
+  async function makeUpload(blob) {
+    const { width, height, quality } = CFG.upload;
     const bmp = await createImageBitmap(blob);
     const canvas = document.createElement('canvas');
-    canvas.width = 360; canvas.height = 450;
-    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    canvas.width = width; canvas.height = height;
+    canvas.getContext('2d').drawImage(bmp, 0, 0, width, height);
     bmp.close();
-    return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('thumb failed'))), 'image/jpeg', 0.85));
+    return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('resize failed'))), 'image/jpeg', quality));
   }
 
   /* ---------------- Frame drawing ----------------
@@ -172,39 +177,87 @@
   }
 
   /* ---------------- Wall ---------------- */
-  let objectUrls = [];
+  const wallState = { ids: new Set(), next: null, loading: false, count: 0, closed: false, poll: null };
+  const reported = new Set();      // hidden on this phone straight after reporting
 
-  const PAGE = 12;                 // photos added to the carousel at a time
-  let allPhotos = [], shown = 0;
+  function setCount(n) {
+    wallState.count = Math.max(0, n);
+    $('smile-count').textContent = `${wallState.count.toLocaleString('en-IN')} ${wallState.count === 1 ? 'Smile' : 'Smiles'}`;
+  }
+
+  function setClosed(closed) {
+    wallState.closed = closed;
+    document.querySelector('.cta').hidden = closed;
+    $('closed-note').hidden = !closed;
+    $('closed-note').textContent = CFG.messages.closed;
+  }
 
   async function renderWall() {
     const track = $('wall-grid');
-    objectUrls.forEach(URL.revokeObjectURL);
-    objectUrls = [];
-    allPhotos = [];
-    try { allPhotos = await store.list(); } catch (e) { console.error('Could not read photos', e); }
-
+    let data;
+    try {
+      data = await api.wall();
+    } catch (e) {
+      console.error('Could not load the wall', e);
+      if (!track.children.length) {
+        CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
+        toast(CFG.messages.wallFailed);
+      }
+      return;
+    }
     track.innerHTML = '';
-    shown = 0;
-    showMore();
+    wallState.ids.clear();
+    // A photo added seconds ago can be missing from the briefly cached first page.
+    const fresh = mine.all().filter((p) => Date.now() - p.t < 60000 && !data.photos.some((q) => q.id === p.id));
+    appendPhotos([...fresh, ...data.photos]);
+    wallState.next = data.next;
+    setCount(data.count + fresh.length);
+    setClosed(data.closed);
+    if (!data.next && wallState.ids.size < CFG.samplesUntil) CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
     track.scrollLeft = 0;
-    const n = allPhotos.length + CFG.samples.length;
-    $('smile-count').textContent = `${n.toLocaleString('en-IN')} ${n === 1 ? 'Smile' : 'Smiles'}`;
   }
 
-  /* Adds the next page of photos; the sample cards follow the last real photo. */
-  function showMore() {
+  function appendPhotos(photos) {
     const track = $('wall-grid');
-    const next = allPhotos.slice(shown, shown + PAGE);
-    next.forEach((photo, i) => {
-      const url = URL.createObjectURL(photo.thumb || photo.blob);
-      objectUrls.push(url);
-      track.appendChild(tile(url, `Your Smile Frame, smile number ${allPhotos.length - shown - i}`));
+    const firstSample = track.querySelector('[data-sample]');
+    photos.forEach((p) => {
+      if (wallState.ids.has(p.id) || reported.has(p.id)) return;
+      wallState.ids.add(p.id);
+      track.insertBefore(tile(p), firstSample);
     });
-    shown += next.length;
-    if (shown >= allPhotos.length && !track.querySelector('[data-sample]')) {
-      CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
+  }
+
+  /* Loads the next page when the carousel nears its end. */
+  async function showMore() {
+    if (!wallState.next || wallState.loading) return;
+    wallState.loading = true;
+    try {
+      const data = await api.wall(wallState.next);
+      appendPhotos(data.photos);
+      wallState.next = data.next;
+    } catch (e) {
+      console.error('Could not load more photos', e);
+    } finally {
+      wallState.loading = false;
     }
+  }
+
+  /* While the wall is on screen, new smiles slide in at the front and the counter ticks up. */
+  async function pollWall() {
+    if (document.hidden || location.hash === '#camera') return;
+    let data;
+    try { data = await api.wall(); } catch { return; }
+    const track = $('wall-grid');
+    const newer = data.photos.filter((p) => !wallState.ids.has(p.id) && !reported.has(p.id));
+    const width = track.scrollWidth;
+    newer.reverse().forEach((p) => {
+      wallState.ids.add(p.id);
+      track.prepend(tile(p));
+    });
+    // Someone browsing further along keeps their place.
+    if (track.scrollLeft > 0) track.scrollLeft += track.scrollWidth - width;
+    setCount(data.count);
+    setClosed(data.closed);
   }
 
   /* Sample cards are drawn with the real frame so they match a saved photo. */
@@ -227,14 +280,116 @@
     return li;
   }
 
-  function tile(src, alt) {
+  /* One photo on the wall. Your own photos get a delete button, everyone else's a report button. */
+  function tile(photo) {
+    const own = !!mine.get(photo.id);
     const li = document.createElement('li');
+    li.className = 'tile';
+    li.dataset.id = photo.id;
     const img = document.createElement('img');
-    img.src = src;
-    img.alt = alt;
+    img.src = photo.url;
+    img.alt = own ? 'Your Smile Frame' : 'A Smile Frame from the Smile Wall';
     img.loading = 'lazy';
-    li.appendChild(img);
+    img.decoding = 'async';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `tile__act${own ? ' tile__act--own' : ''}`;
+    btn.setAttribute('aria-label', own ? 'Delete my photo' : 'Report this photo');
+    btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-${own ? 'trash' : 'flag'}"/></svg>`;
+    btn.addEventListener('click', () => (own ? deleteMine(photo.id) : reportPhoto(photo.id)));
+    li.append(img, btn);
     return li;
+  }
+
+  function dropTile(id) {
+    const li = $('wall-grid').querySelector(`[data-id="${id}"]`);
+    if (li) li.remove();
+    wallState.ids.delete(id);
+  }
+
+  async function reportPhoto(id) {
+    const ok = await ask({ title: 'Report this photo?', text: 'It will be hidden on your phone and our team will review it.', ok: 'Report' });
+    if (!ok) return;
+    reported.add(id);
+    dropTile(id);
+    toast(CFG.messages.reported);
+    api.report(id).catch((e) => console.error('Report failed', e));
+  }
+
+  async function deleteMine(id) {
+    const photo = mine.get(id);
+    if (!photo) return false;
+    const ok = await ask({ title: 'Delete your photo?', text: 'It will be removed from the Smile Wall and deleted for good.', ok: 'Delete' });
+    if (!ok) return false;
+    try {
+      await api.remove(id, photo.token);
+    } catch (e) {
+      if (e.status !== 404) {   // 404: already gone (removed by a moderator, or the wall closed)
+        toast('Could not delete your photo. Please try again.');
+        return false;
+      }
+    }
+    mine.drop(id);
+    if (wallState.ids.has(id)) setCount(wallState.count - 1);
+    dropTile(id);
+    updateMineButton();
+    toast(CFG.messages.deleted);
+    return true;
+  }
+
+  /* ---------------- Sheets and toast ---------------- */
+  function ask({ title, text, ok }) {
+    const dlg = $('ask');
+    $('ask-title').textContent = title;
+    $('ask-text').textContent = text;
+    $('ask-ok').textContent = ok;
+    return new Promise((resolve) => {
+      const done = (val) => {
+        $('ask-ok').onclick = $('ask-cancel').onclick = dlg.onclose = null;
+        if (dlg.open) dlg.close();
+        resolve(val);
+      };
+      $('ask-ok').onclick = () => done(true);
+      $('ask-cancel').onclick = () => done(false);
+      dlg.onclose = () => done(false);
+      dlg.showModal();
+    });
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const el = $('toast');
+    el.textContent = msg;
+    el.classList.add('toast--on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('toast--on'), 3500);
+  }
+
+  function updateMineButton() {
+    $('btn-mine').hidden = mine.all().length === 0;
+  }
+
+  function openMine() {
+    const list = $('mine-list');
+    list.innerHTML = '';
+    mine.all().forEach((p) => {
+      const li = document.createElement('li');
+      const img = document.createElement('img');
+      img.src = p.url;
+      img.alt = 'Your Smile Frame';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mine-list__del';
+      btn.textContent = 'Delete';
+      btn.addEventListener('click', async () => {
+        $('mine').close();
+        if (!(await deleteMine(p.id))) return;
+        if (mine.all().length) openMine();
+      });
+      li.append(img, btn);
+      list.appendChild(li);
+    });
+    $('mine').showModal();
   }
 
   function scrollWall(dir) {
@@ -242,7 +397,7 @@
     const item = track.querySelector('li');
     if (!item) return;
     const step = item.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0);
-    if (dir > 0 && shown < allPhotos.length) showMore();
+    if (dir > 0) showMore();
     const max = track.scrollWidth - track.clientWidth;
     let to = track.scrollLeft + dir * step;
     if (to > max + 1) to = 0;          // wrap around at the ends
@@ -391,16 +546,40 @@
     }
   }
 
-  async function addToWall() {
+  /* "Add to the Smile Wall" first asks for consent, then uploads. */
+  function addToWall() {
     if (!resultBlob) return;
-    $('btn-add').disabled = true;
+    $('consent-public').checked = false;
+    $('consent-age').checked = false;
+    $('consent-ok').disabled = true;
+    $('consent-ok').textContent = CFG.consent.ok;
+    $('consent-error').hidden = true;
+    $('consent').showModal();
+  }
+
+  async function confirmConsent() {
+    const ok = $('consent-ok');
+    ok.disabled = true;
+    ok.textContent = 'Adding…';
+    $('consent-error').hidden = true;
     try {
-      await store.add(resultBlob);
+      const small = await makeUpload(resultBlob);
+      const res = await api.add(small);
+      mine.add({ id: res.id, url: res.url, token: res.deleteToken, t: Date.now() });
+      updateMineButton();
+      $('consent').close();
+      $('btn-add').disabled = true;     // one photo per capture
       location.hash = '#wall';
+      toast(CFG.messages.added);
     } catch (e) {
       console.error(e);
-      $('btn-add').disabled = false;
-      alert('Could not save your photo. Please try again.');
+      const msg = e.status === 429 ? CFG.messages.slowDown
+        : e.status === 410 ? CFG.messages.closed
+        : CFG.messages.uploadFailed;
+      $('consent-error').textContent = msg;
+      $('consent-error').hidden = false;
+      ok.textContent = CFG.consent.ok;
+      ok.disabled = e.status === 410;
     }
   }
 
@@ -472,6 +651,7 @@
     $('view-camera').hidden = view !== 'camera';
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
     resetSlide();
+    if (view === 'camera' && wallState.closed) { location.hash = '#wall'; return; }
     if (view === 'camera') {
       setPhase('ready');
       startCamera();
@@ -481,6 +661,23 @@
     }
     window.scrollTo(0, 0);
   }
+
+  const consentReady = () => {
+    $('consent-ok').disabled = !($('consent-public').checked && $('consent-age').checked);
+  };
+  $('consent-title').textContent = CFG.consent.title;
+  $('consent-public-text').textContent = CFG.consent.public;
+  $('consent-age-text').textContent = CFG.consent.age;
+  $('consent-note').textContent = CFG.consent.note;
+  $('consent-cancel').textContent = CFG.consent.cancel;
+  $('consent-public').addEventListener('change', consentReady);
+  $('consent-age').addEventListener('change', consentReady);
+  $('consent-ok').addEventListener('click', confirmConsent);
+  $('consent-cancel').addEventListener('click', () => $('consent').close());
+  $('btn-mine').addEventListener('click', openMine);
+  $('mine-close').addEventListener('click', () => $('mine').close());
+  updateMineButton();
+  wallState.poll = setInterval(pollWall, CFG.pollSeconds * 1000);
 
   $('date-chip').textContent = CFG.dateChip;
   $('home-tags').textContent = CFG.hashtags.join('');
@@ -492,7 +689,7 @@
   $('btn-retry-camera').addEventListener('click', startCamera);
   $('wall-grid').addEventListener('scroll', () => {
     const t = $('wall-grid');
-    if (shown < allPhotos.length && t.scrollWidth - t.scrollLeft - t.clientWidth < 400) showMore();
+    if (t.scrollWidth - t.scrollLeft - t.clientWidth < 400) showMore();
   }, { passive: true });
   $('car-prev').addEventListener('click', () => scrollWall(-1));
   $('car-next').addEventListener('click', () => scrollWall(1));

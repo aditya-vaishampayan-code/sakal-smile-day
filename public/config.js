@@ -10,6 +10,33 @@ window.SMILE_CONFIG = {
   countdownSeconds: 3,
   // Saved photo: the frame card on purple, 4:5 for Instagram and WhatsApp
   output: { width: 1080, height: 1350 },
+  // Copy sent to the Smile Wall: smaller, so uploads are quick on mobile data
+  upload: { width: 540, height: 675, quality: 0.82 },
+  // How often the wall checks for new smiles while it's on screen
+  pollSeconds: 30,
+  // Below this many photos, the sample cards fill out the wall
+  samplesUntil: 6,
+
+  // Consent (DPDP Act). If you change the wording, bump consentVersion here
+  // AND CONSENT_VERSION in wrangler.toml, then redeploy.
+  consentVersion: '2026-10-v1',
+  consent: {
+    title: 'Before your smile goes up',
+    public: 'I agree that my photo will be shown publicly on the Smile Wall until 3 Nov 2026.',
+    age: 'I am 18 or older, or I am the parent or guardian of everyone under 18 in this photo.',
+    note: 'Sakal deletes every photo by 3 Nov 2026. You can delete yours sooner from this phone at any time.',
+    ok: 'Add my photo',
+    cancel: 'Not now'
+  },
+  messages: {
+    added: 'Your smile is on the wall!',
+    deleted: 'Your photo has been deleted.',
+    reported: 'Thanks. Our team will take a look.',
+    uploadFailed: 'Could not add your photo. Check your connection and try again.',
+    slowDown: 'Too many photos from this network right now. Please try again in a minute.',
+    closed: 'The Smile Wall is closed. Thank you for smiling with Pune!',
+    wallFailed: 'Could not load the Smile Wall. Please refresh the page.'
+  },
   colors: {
     purple: '#5B32A3',
     peach: '#FFCCB5',

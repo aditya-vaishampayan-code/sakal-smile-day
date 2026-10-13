@@ -46,7 +46,14 @@
       <span class="cta__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-camera"/></svg></span>
     </a>
 
+    <p class="closed-note" id="closed-note" hidden></p>
+
     <p class="tags" id="home-tags"></p>
+
+    <p class="foot-links">
+      <button type="button" id="btn-mine" class="link-btn" hidden>Delete my photo</button>
+      <a href="privacy.html">Privacy notice</a>
+    </p>
 
     <p class="powered">powered by <img src="assets/sakal-logo-white.png" alt="Sakal" width="102" height="26"></p>
   </main>
@@ -96,7 +103,46 @@
     <p class="powered">powered by <img src="assets/sakal-logo-white.png" alt="Sakal" width="102" height="26"></p>
   </main>
 
+  <!-- ============ SHEETS ============ -->
+  <dialog id="consent" class="sheet" aria-labelledby="consent-title">
+    <div class="sheet__body">
+      <h2 id="consent-title" class="sheet__title"></h2>
+      <label class="check"><input type="checkbox" id="consent-public"><span id="consent-public-text"></span></label>
+      <label class="check"><input type="checkbox" id="consent-age"><span id="consent-age-text"></span></label>
+      <p class="sheet__note"><span id="consent-note"></span> <a href="privacy.html" target="_blank" rel="noopener">Privacy notice</a></p>
+      <p class="sheet__error" id="consent-error" role="alert" hidden></p>
+      <button type="button" id="consent-ok" class="sheet__primary" disabled></button>
+      <button type="button" id="consent-cancel" class="sheet__secondary"></button>
+    </div>
+  </dialog>
+
+  <dialog id="ask" class="sheet" aria-labelledby="ask-title">
+    <div class="sheet__body">
+      <h2 id="ask-title" class="sheet__title"></h2>
+      <p id="ask-text" class="sheet__text"></p>
+      <button type="button" id="ask-ok" class="sheet__primary"></button>
+      <button type="button" id="ask-cancel" class="sheet__secondary">Cancel</button>
+    </div>
+  </dialog>
+
+  <dialog id="mine" class="sheet" aria-labelledby="mine-title">
+    <div class="sheet__body">
+      <h2 id="mine-title" class="sheet__title">Your photos</h2>
+      <p class="sheet__text">Photos you added from this phone. Deleting removes them from the Smile Wall for good.</p>
+      <ul id="mine-list" class="mine-list"></ul>
+      <button type="button" id="mine-close" class="sheet__secondary">Close</button>
+    </div>
+  </dialog>
+
+  <p id="toast" class="toast" role="status" aria-live="polite"></p>
+
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="icon-flag" viewBox="0 0 24 24">
+      <path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24">
+      <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
     <symbol id="icon-camera" viewBox="0 0 24 24">
       <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       <circle cx="12" cy="13" r="3.8" fill="none" stroke="currentColor" stroke-width="1.8"/>

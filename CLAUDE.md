@@ -10,31 +10,35 @@ This is a mobile web app for **Pune Smile Day**, a Sakal (Sakal Media Group, Pun
 
 Hashtags: `#SmileDay` `#PuneSmileDay`.
 
-## Current state (working prototype)
-- Plain HTML/CSS/JS, no build step. `index.html` + `styles.css` + `config.js` + `app.js`.
+## Current state
+- Plain HTML/CSS/JS in `public/`, no build step: `index.html` + `styles.css` + `config.js` + `app.js`, plus `admin.html` (moderation) and `privacy.html` (DPDP notice, draft for Sakal legal).
+- Hosting: one Cloudflare Worker named `smileday` on Sakal's Cloudflare account (`wrangler.toml`). Static files in `public/` are served as Workers Static Assets; `worker/index.js` handles `/api/*` and `/p/*`. Photos in R2 (`smileday-photos`), rows in D1 (`smileday-db`, schema in `worker/schema.sql`). The account also runs esakal.com's live Workers: only ever touch resources named `smileday*`.
 - Hash routing: `#wall` (home) and `#camera`.
-- The camera uses `getUserMedia` (front camera, mirrored). The 3-second countdown and the frame are drawn on a `<canvas>` (`composeFrame()` in `app.js`). The output is a 1080×1350 JPEG.
-- Photos are stored **locally in IndexedDB** through a tiny `store` object with `list()` and `add(blob)`; `add` also saves a 360 x 450 thumbnail and the wall shows those, 12 at a time. This is the seam for a real backend.
-- Share uses the Web Share API with files, and falls back to a download.
+- The camera uses `getUserMedia` (front camera, mirrored). The 3-second countdown and the frame are drawn on a `<canvas>` (`composeFrame()` in `app.js`). Share/download get a 1080×1350 JPEG; the wall gets a 540×675 copy (`CFG.upload`).
+- Upload flow: "Add to the Smile Wall" opens a consent sheet (two tick-boxes, wording in `config.js`), then `POST /api/photos`. No pre-approval: photos go straight up. The server returns a delete token, kept in localStorage (`smileday-mine`) so that phone can delete its photo. Anyone can report a photo; 5 reports auto-hide it. Moderators remove photos at `/admin.html` (password = Worker secret `ADMIN_PASSWORD`).
+- The wall pages through `/api/wall` 24 at a time and polls the first page every 30 s for new photos and the count (first page is edge-cached 10 s). The counter lives in a `stats` row, never a `COUNT(*)`.
+- Deadlines (`wrangler.toml` vars): uploads close `CLOSE_AT` (2 Nov 11:30 PM IST); a cron every 30 min wipes all photos and rows once `DELETE_AT` (3 Nov 00:00 IST) has passed. Worker logs are off on purpose.
+- `CONSENT_VERSION` in `wrangler.toml` must match `consentVersion` in `config.js`.
+- Local testing: `npx wrangler dev` (needs a current Visual C++ runtime on Windows), or `node test/dev-server.mjs`, which runs the same Worker in Node with node:sqlite and in-memory R2. `npm run smoke` runs the API checks against either (or a deployed URL with `BASE=`/`ADMIN=`). Deploy steps: `DEPLOY.md`.
 
 ## Design system (keep it consistent)
-- Source of truth: the Sakal design team's 390 x 844 mockups. Every screen is that artboard; `--u` in `styles.css` is one design pixel (width scale, never below 0.92 of it on short viewports, so the page scrolls rather than shrinks). From 768px wide and 600px tall (tablets) the home screen reflows with grid (one column in portrait, logo left and wall right in landscape) and the camera artboard scales up to fit the height; see the Tablets block at the end of `styles.css`.
+- Source of truth: the Sakal design team's 390 x 844 mockups. Every screen is that artboard; `--u` in `styles.css` is one design pixel (width scale, never below 0.92 of it on short viewports, so the page scrolls rather than shrinks). From 768px wide and 600px tall (tablets) the home screen reflows with grid (one column in portrait, logo left and wall right in landscape) and the camera artboard scales up to fit the height; see the Tablets block near the end of `styles.css`. Sheets (consent, confirm, your photos) and the toast sit outside the artboard and use plain px.
 - Colours (tokens in `styles.css`, mirrored in `config.js` for the canvas): purple `#5B32A3`, deep purple `#402372`, yellow `#F3C11B`, peach `#FFCCB5`, red `#DA2627` (LIVE tag), white. Camera button gradient runs `#7B4C9F` to `#A85A86` so white text stays above 4.5:1.
 - Fonts: Fredoka 600/700 for headings and the frame hashtag, Poppins for body and buttons.
-- Assets live in `assets/`: Pune Smile Day logo (SVG), Sakal logo, skyline, emoji stickers, sample photos.
+- Assets live in `public/assets/`: Pune Smile Day logo (SVG), Sakal logo, skyline, emoji stickers, sample photos.
 - Motifs: purple background with soft blobs and the Pune skyline, peach-to-purple photo cards with a yellow window and emoji stickers, pill buttons, a camera button you hold and slide right to open the camera (tap still works).
 - Mobile first. Touch targets >= 44px. Respect `prefers-reduced-motion`. Text contrast >= 4.5:1.
 
 ## Next steps, in priority order
-1. **Shared backend.** Replace `store` in `app.js` with API calls, keeping the `list()` / `add(blob)` shape. Suggested stack: Supabase (Storage bucket + `photos` table: id, url, created_at, status) or Firebase (Storage + Firestore). Upload the JPEG, insert a row with `status='pending'`, and have the wall read `status='approved'`, newest first and paginated.
-2. **Moderation.** Build a simple password-protected `/admin.html` with approve/reject. Optionally auto-flag images with a moderation API. Nothing reaches the public wall without approval.
-3. **Live counter.** Use a realtime subscription (Supabase Realtime or Firestore onSnapshot) to update the count and push new tiles onto the wall without a reload. Format with `en-IN` grouping (2,14,300).
-4. **Big-screen wall mode.** Add a `?display=1` variant of the wall for event screens and the live-stream overlay: auto-scroll, larger tiles, the counter in the corner, no button.
-5. **Countdown home (pre-event).** Before 1 Nov 9:00 AM IST, show a countdown and a pledge button, per the deck's microsite slide.
-6. **Polish.** Use the real Sakal logo (replace `[SAKAL LOGO]`), add a PWA manifest and icons, OG/Twitter share meta, analytics events (frame_made, shared, added_to_wall), and Marathi copy (an i18n toggle).
-7. **Privacy.** Show a consent line before upload ("Your photo will appear on the public Smile Wall"), add a delete-my-photo link, and strip EXIF data (the canvas output already does).
+Done: shared backend, moderation (remove after posting, per Sakal), live counter and wall polling, consent + delete-my-photo + deletion deadline.
+1. **Go live**: see `DEPLOY.md` (domain onto Cloudflare, D1/R2 created, `ADMIN_PASSWORD` secret, custom domains, `PHOTO_BASE`).
+2. **Load test** before 1 Nov against the deployed Worker.
+3. **Countdown home (pre-event).** Uploads are open now, but a countdown to 1 Nov 9:00 AM IST and a pledge button could sit above the wall, per the deck's microsite slide.
+4. **Big-screen wall mode.** A `?display=1` variant for event screens: auto-scroll, larger tiles, the counter in the corner, no button. (No live stream is planned.)
+5. **Polish.** PWA manifest and icons, OG/Twitter share meta, analytics events (frame_made, shared, added_to_wall), and Marathi copy (an i18n toggle).
 
 ## Conventions
-- Event text belongs in `config.js`; don't hard-code it in `app.js`.
+- Event text belongs in `public/config.js`; don't hard-code it in `app.js`.
+- Every photo must be gone by 3 Nov 2026 (DPDP promise in `privacy.html`). Don't add logging, backups or copies of photos anywhere else.
 - If you add a framework, keep the bundle small, because people will use mobile data at the event.
 - Test on real iOS Safari and Android Chrome. The camera needs https.

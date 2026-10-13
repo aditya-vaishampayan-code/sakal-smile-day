@@ -1,0 +1,58 @@
+# Pune Smile Day on Cloudflare (Sakal account). Everything here is named
+# "smileday" so it can't be confused with the esakal.com Workers.
+name = "smileday"
+main = "worker/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+# Uncomment once bharatsmitdin.com is active on Cloudflare:
+# routes = [
+#   { pattern = "bharatsmitdin.com", custom_domain = true },
+#   { pattern = "www.bharatsmitdin.com", custom_domain = true }
+# ]
+
+# The website. Files that exist in public/ are served directly (free, no
+# Worker request); /api/* and /p/* fall through to the Worker.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Logs off on purpose: we promised no hidden copies. Use `npx wrangler tail`
+# for live logs while debugging; tail output isn't stored.
+[observability]
+enabled = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "smileday-db"
+database_id = "00000000-0000-0000-0000-000000000000"   # filled in after `wrangler d1 create`
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "smileday-photos"
+
+# Per-IP limits. Generous, because many phones share one mobile-network IP.
+[[ratelimits]]
+name = "UPLOAD_LIMITER"
+namespace_id = "7301"
+simple = { limit = 30, period = 60 }
+
+[[ratelimits]]
+name = "REPORT_LIMITER"
+namespace_id = "7302"
+simple = { limit = 30, period = 60 }
+
+# Checks every 30 minutes whether DELETE_AT has passed, then wipes all photos.
+[triggers]
+crons = ["*/30 * * * *"]
+
+[vars]
+# Uploads stop at 11:30 PM IST on 2 Nov; everything is deleted from midnight IST, 3 Nov.
+CLOSE_AT = "2026-11-02T18:00:00Z"
+DELETE_AT = "2026-11-02T18:30:00Z"
+# Bump when the consent wording in public/config.js changes (must match there).
+CONSENT_VERSION = "2026-10-v1"
+REPORT_HIDE_AT = "5"
+# Empty: photos are served by the Worker at /p/<id>.jpg. Once the domain is on
+# Cloudflare, set to "https://photos.bharatsmitdin.com/" (R2 custom domain,
+# cached at the edge and not counted as Worker requests).
+PHOTO_BASE = ""

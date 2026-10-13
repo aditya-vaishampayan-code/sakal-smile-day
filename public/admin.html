@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#402372">
+  <title>Smile Wall moderation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Poppins:wght@400;500;600&display=swap">
+  <style>
+    :root { --purple: #5B32A3; --purple-deep: #402372; --yellow: #F3C11B; --red: #DA2627; --white: #FFFFFF; --ink: #202020; --line: #E4DDF0; --bg: #F6F3FB; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 'Poppins', system-ui, sans-serif; }
+    [hidden] { display: none !important; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 3px solid var(--purple); outline-offset: 2px; }
+
+    header { position: sticky; top: 0; z-index: 2; background: var(--purple-deep); color: var(--white); }
+    .bar { max-width: 1400px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+    h1 { margin: 0; font: 700 20px/1.2 'Fredoka', sans-serif; margin-right: auto; }
+    .count { font-weight: 600; color: var(--yellow); }
+    .tabs { display: flex; gap: 6px; }
+    .tab { min-height: 44px; padding: 0 16px; border: 1px solid #8C77B8; border-radius: 22px; background: transparent; color: var(--white); font-weight: 500; }
+    .tab[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--purple-deep); }
+    .tools { max-width: 1400px; margin: 0 auto; padding: 12px 16px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+    .tools label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+    .tools input[type="datetime-local"] { min-height: 40px; padding: 0 8px; border: 1px solid #B9AED0; border-radius: 8px; }
+    .ghost { min-height: 44px; padding: 0 16px; border: 1px solid var(--purple); border-radius: 22px; background: var(--white); color: var(--purple-deep); font-weight: 500; }
+    .hint { color: #5A5170; font-size: 13px; }
+
+    main { max-width: 1400px; margin: 0 auto; padding: 12px 16px 48px; }
+    .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .card { display: flex; flex-direction: column; border-radius: 10px; overflow: hidden; background: var(--white); border: 1px solid var(--line); }
+    .card img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--purple); }
+    .card__meta { display: flex; justify-content: space-between; gap: 6px; padding: 6px 8px 0; font-size: 12px; color: #5A5170; }
+    .flags { color: #A3181A; font-weight: 600; }
+    .card__acts { display: flex; gap: 6px; padding: 8px; }
+    .card__acts button { flex: 1; min-height: 44px; border-radius: 8px; font-weight: 600; font-size: 14px; }
+    .remove { border: 1px solid var(--red); background: var(--white); color: #A3181A; }
+    .remove.armed { background: var(--red); color: var(--white); }
+    .restore { border: 1px solid var(--purple); background: var(--white); color: var(--purple-deep); }
+    .empty { padding: 48px 0; text-align: center; color: #5A5170; }
+    .more { display: block; margin: 20px auto 0; }
+
+    .login { max-width: 380px; margin: 12vh auto; padding: 28px 24px; border-radius: 16px; background: var(--white); border: 1px solid var(--line); }
+    .login h1 { color: var(--purple-deep); margin-bottom: 16px; }
+    .login input { width: 100%; min-height: 48px; padding: 0 12px; border: 1px solid #B9AED0; border-radius: 10px; }
+    .login button { width: 100%; min-height: 48px; margin-top: 12px; border: 0; border-radius: 24px; background: var(--purple-deep); color: var(--white); font-weight: 600; }
+    .error { color: #A3181A; margin: 10px 0 0; }
+    .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 10px 18px; border-radius: 20px; background: var(--purple-deep); color: var(--white); font-weight: 500; opacity: 0; transition: opacity .2s; pointer-events: none; }
+    .toast.on { opacity: 1; }
+  </style>
+</head>
+<body>
+  <form class="login" id="login">
+    <h1>Smile Wall moderation</h1>
+    <label for="pw">Moderator password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button>
+    <p class="error" id="login-error" role="alert" hidden></p>
+  </form>
+
+  <div id="app" hidden>
+    <header>
+      <div class="bar">
+        <h1>Smile Wall moderation</h1>
+        <span class="count" id="count" aria-live="polite"></span>
+        <div class="tabs" role="group" aria-label="Which photos">
+          <button type="button" class="tab" data-view="latest" aria-pressed="true">Latest</button>
+          <button type="button" class="tab" data-view="reported" aria-pressed="false">Reported</button>
+          <button type="button" class="tab" data-view="hidden" aria-pressed="false">Auto-hidden</button>
+        </div>
+        <button type="button" class="tab" id="signout">Sign out</button>
+      </div>
+    </header>
+    <div class="tools">
+      <label id="auto-wrap"><input type="checkbox" id="auto" checked> Auto-refresh every 20 s</label>
+      <label id="at-wrap">Show photos added before <input type="datetime-local" id="at"></label>
+      <button type="button" class="ghost" id="refresh">Refresh now</button>
+      <span class="hint" id="hint"></span>
+    </div>
+    <main>
+      <ul class="grid" id="grid"></ul>
+      <p class="empty" id="empty" hidden>Nothing here.</p>
+      <button type="button" class="ghost more" id="more" hidden>Load more</button>
+    </main>
+  </div>
+  <p class="toast" id="toast" role="status"></p>
+
+  <script>
+  (() => {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const KEY = 'smileday-admin';
+    let pw = '';
+    try { pw = sessionStorage.getItem(KEY) || ''; } catch {}
+    let view = 'latest', offset = 0, timer = null;
+    const HINTS = {
+      latest: 'Newest first. Tap Remove twice to delete a photo for good.',
+      reported: 'Photos citizens reported, most reports first. Remove anything offensive.',
+      hidden: 'Hidden automatically after 5 reports. Restore if it is fine, or remove it.'
+    };
+
+    async function call(method, path) {
+      const res = await fetch(path, { method, headers: { Authorization: `Bearer ${pw}` } });
+      if (res.status === 401) { signOut('Wrong password. Please try again.'); throw new Error('unauthorized'); }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function toast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('on');
+      clearTimeout(toast.t);
+      toast.t = setTimeout(() => t.classList.remove('on'), 2500);
+    }
+
+    const ist = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', second: '2-digit' });
+
+    function card(p) {
+      const li = document.createElement('li');
+      li.className = 'card';
+      const img = document.createElement('img');
+      img.src = p.url; img.alt = ''; img.loading = 'lazy';
+      const meta = document.createElement('div');
+      meta.className = 'card__meta';
+      meta.innerHTML = `<span>${ist.format(p.created_at)}</span>${p.reports ? `<span class="flags">${p.reports} report${p.reports > 1 ? 's' : ''}</span>` : ''}`;
+      const acts = document.createElement('div');
+      acts.className = 'card__acts';
+      if (p.status === 'hidden') {
+        const restore = document.createElement('button');
+        restore.type = 'button'; restore.className = 'restore'; restore.textContent = 'Restore';
+        restore.onclick = async () => {
+          restore.disabled = true;
+          try { await call('POST', `/api/admin/photos/${p.id}/restore`); li.remove(); offset--; toast('Restored to the wall'); }
+          catch { restore.disabled = false; toast('Could not restore. Try again.'); }
+        };
+        acts.appendChild(restore);
+      }
+      const remove = document.createElement('button');
+      remove.type = 'button'; remove.className = 'remove'; remove.textContent = 'Remove';
+      remove.onclick = async () => {
+        if (!remove.classList.contains('armed')) {      // first tap arms, second tap deletes
+          remove.classList.add('armed'); remove.textContent = 'Tap to confirm';
+          setTimeout(() => { remove.classList.remove('armed'); remove.textContent = 'Remove'; }, 3000);
+          return;
+        }
+        remove.disabled = true;
+        try { await call('DELETE', `/api/admin/photos/${p.id}`); li.remove(); offset--; toast('Removed and deleted'); }
+        catch { remove.disabled = false; toast('Could not remove. Try again.'); }
+      };
+      acts.appendChild(remove);
+      li.append(img, meta, acts);
+      return li;
+    }
+
+    async function load(append) {
+      if (!append) offset = 0;
+      const params = new URLSearchParams({ view, offset });
+      const at = $('at').value;
+      if (view === 'latest' && at) params.set('at', new Date(at).getTime());
+      let data;
+      try { data = await call('GET', `/api/admin/photos?${params}`); }
+      catch (e) { if (e.message !== 'unauthorized') toast('Could not load photos.'); return false; }
+      if (!append) $('grid').innerHTML = '';
+      data.photos.forEach((p) => $('grid').appendChild(card(p)));
+      offset += data.photos.length;
+      $('count').textContent = `${data.count.toLocaleString('en-IN')} on the wall`;
+      $('empty').hidden = $('grid').children.length > 0;
+      $('more').hidden = !data.more;
+      return true;
+    }
+
+    function setView(next) {
+      view = next;
+      document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+      $('auto-wrap').hidden = $('at-wrap').hidden = view !== 'latest';
+      $('hint').textContent = HINTS[view];
+      load(false);
+    }
+
+    function startAuto() {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        // Only refresh the top of the Latest list, so the page doesn't jump while someone is reviewing further down.
+        if (view === 'latest' && $('auto').checked && !$('at').value && offset <= 60 && !document.hidden && !document.querySelector('.armed')) load(false);
+      }, 20000);
+    }
+
+    function signOut(msg) {
+      pw = '';
+      try { sessionStorage.removeItem(KEY); } catch {}
+      clearInterval(timer);
+      $('app').hidden = true;
+      $('login').hidden = false;
+      $('login-error').textContent = msg || '';
+      $('login-error').hidden = !msg;
+    }
+
+    async function signIn() {
+      $('login').hidden = true;
+      $('app').hidden = false;
+      setView('latest');
+      startAuto();
+    }
+
+    $('login').addEventListener('submit', (e) => {
+      e.preventDefault();
+      pw = $('pw').value;
+      try { sessionStorage.setItem(KEY, pw); } catch {}
+      $('pw').value = '';
+      signIn();
+    });
+    document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+    $('refresh').addEventListener('click', () => load(false));
+    $('more').addEventListener('click', () => load(true));
+    $('at').addEventListener('change', () => load(false));
+    $('signout').addEventListener('click', () => signOut());
+
+    if (pw) signIn();
+  })();
+  </script>
+</body>
+</html>
