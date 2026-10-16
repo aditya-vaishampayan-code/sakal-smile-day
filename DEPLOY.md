@@ -44,6 +44,9 @@ create, change or delete things named `smileday*`.** Never change the Workers pl
    ```bash
    npx wrangler secret put ADMIN_PASSWORD
    ```
+   Pipe it in from Git Bash (`printf '%s' "$PW" | npx wrangler secret put ADMIN_PASSWORD`), not from
+   Windows PowerShell 5.1, whose pipe adds invisible characters so the password never matches. The
+   current password is in `MODERATOR-PASSWORD.txt` on the deploy machine (git-ignored).
 6. **"Continue with Google"** (optional; without it people type their email). Use a new
    Google Cloud project owned by a Sakal account, not the existing esakal sign-in client:
    - console.cloud.google.com → New project `smileday`.
