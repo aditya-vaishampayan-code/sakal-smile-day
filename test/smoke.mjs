@@ -48,7 +48,7 @@ check('upload works', a.status === 201 && a.data.id && a.data.deleteToken, a.dat
 const b = await up();
 check('second upload works', b.status === 201);
 
-const img = await fetch(BASE + a.data.url.replace(/^https?:\/\/[^/]+/, ''));
+const img = await fetch(new URL(a.data.url, BASE));   // absolute once PHOTO_BASE is set
 check('photo is served', img.status === 200 && img.headers.get('content-type') === 'image/jpeg');
 
 const w = { data: await until(async () => { const d = await wallTop(); return d.count === start.data.count + 2 && d; }) || await wallTop() };

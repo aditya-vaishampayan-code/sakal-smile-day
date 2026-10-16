@@ -4,11 +4,10 @@ name = "smileday"
 main = "worker/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
-# Uncomment once bharatsmitdin.com is active on Cloudflare:
-# routes = [
-#   { pattern = "bharatsmitdin.com", custom_domain = true },
-#   { pattern = "www.bharatsmitdin.com", custom_domain = true }
-# ]
+routes = [
+  { pattern = "bharatsmitdin.com", custom_domain = true },
+  { pattern = "www.bharatsmitdin.com", custom_domain = true }
+]
 
 # The website. Files that exist in public/ are served directly (free, no
 # Worker request); /api/* and /p/* fall through to the Worker.
@@ -86,4 +85,4 @@ GOOGLE_CLIENT_ID = ""
 # Empty: photos are served by the Worker at /p/<id>.jpg. Once the domain is on
 # Cloudflare, set to "https://photos.bharatsmitdin.com/" (R2 custom domain,
 # cached at the edge and not counted as Worker requests).
-PHOTO_BASE = ""
+PHOTO_BASE = "https://photos.bharatsmitdin.com/"
