@@ -33,4 +33,5 @@
   /* Errors */
   --error-bg: #FFE3E3;
   --error-ink: #8A1012;
+  --error-ring: #FF9C9C;       /* invalid field outline, 6:1 on deep purple */
 }

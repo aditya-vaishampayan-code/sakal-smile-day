@@ -892,6 +892,8 @@
   $('signup-note').textContent = S.note;
   $('signup-cancel').textContent = S.cancel;
   ['signup-email', 'signup-phone', 'signup-consent'].forEach((id) => $(id).addEventListener('input', signupReady));
+  // Editing a field clears its error mark; the message stays until the next submit.
+  ['signup-email', 'signup-phone'].forEach((id) => $(id).addEventListener('input', () => $(id).removeAttribute('aria-invalid')));
   $('signup-consent').addEventListener('change', signupReady);
   $('signup-form').addEventListener('submit', submitSignup);
   $('signup-cancel').addEventListener('click', () => closeSignup('dismissed'));

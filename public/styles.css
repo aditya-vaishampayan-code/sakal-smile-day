@@ -284,7 +284,8 @@ svg { display: block; }
 /* ---------- Sheets (consent, confirm, your photos) and toast ---------- */
 .sheet {
   position: fixed; inset: auto 0 0 0; margin: 0 auto;
-  width: min(100%, 440px); max-height: 92vh; max-height: 92dvh; overflow-y: auto;
+  width: min(100%, 440px); max-width: 100%;   /* beats the browser's default dialog inset */
+  max-height: 92vh; max-height: 92dvh; overflow-y: auto;
   padding: 0; border: 0; border-radius: 24px 24px 0 0;
   background: var(--purple-deep); color: var(--white);
   box-shadow: 0 -8px 30px rgba(20, 6, 45, .45);
@@ -326,6 +327,7 @@ svg { display: block; }
 .field__tel > span { padding: 0 2px 0 14px; font-size: 16px; color: var(--muted); }
 .field__tel input { flex: 1; min-width: 0; height: 100%; padding-left: 6px; border-radius: 0; }
 .field input::placeholder { color: var(--placeholder); }
+.field > input[aria-invalid="true"], .field__tel:has(input[aria-invalid="true"]) { box-shadow: 0 0 0 3px var(--error-ring); }
 .signup-google { display: flex; flex-direction: column; gap: 14px; }
 .signup-gbtn { display: flex; justify-content: center; min-height: 44px; color-scheme: light; }
 .signup-or { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--lilac); }
@@ -364,10 +366,43 @@ svg { display: block; }
 }
 
 /* ---------- Phones on their side ----------
- * The portrait artboard would put the shutter far below the fold. The camera
- * gets an 800 x 530 artboard instead: the frame on the left, title and
- * controls on the right, all within one screen. */
+ * The portrait artboards would put the camera button and the shutter far below
+ * the fold. The home screen reflows into two columns (logo and title left; the
+ * wall and the camera button right), sized so the button is on the first
+ * screen. The camera gets an 800 x 530 artboard: the frame on the left, title
+ * and controls on the right, all within one screen. */
 @media (orientation: landscape) and (max-height: 599px) {
+  .screen--home {
+    --u: clamp(.6px, min(calc(100vw / 820), calc(100vh / 480)), 1px);
+    --u: clamp(.6px, min(calc(100vw / 820), calc(100dvh / 480)), 1px);
+    width: 100%; max-width: calc(1000 * var(--u));
+    height: auto; min-height: 100vh; min-height: 100dvh;
+    padding: calc(16 * var(--u)) calc(24 * var(--u)) calc(24 * var(--u));
+    display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+    column-gap: calc(24 * var(--u)); row-gap: calc(10 * var(--u));
+    justify-items: center; align-content: start;
+    grid-template-areas:
+      "toplogo date"
+      "badge   bar"
+      "logo    car"
+      "title   cta"
+      "tags    links"
+      "powered powered";
+  }
+  .screen--home > :not(.skyline):not(.blob) { position: relative; left: auto; top: auto; }
+  .screen--home .skyline { top: auto; bottom: 0; height: auto; aspect-ratio: 390 / 177; }
+  .top-logo { grid-area: toplogo; justify-self: start; }
+  .date-chip { grid-area: date; justify-self: end; }
+  .logo-badge { grid-area: badge; align-self: end; }
+  .home-logo { grid-area: logo; align-self: center; width: calc(200 * var(--u)); }
+  .wall-title { grid-area: title; align-self: center; font-size: calc(24 * var(--u)); line-height: calc(30 * var(--u)); }
+  .wall-bar { grid-area: bar; width: min(100%, calc(480 * var(--u))); }
+  .carousel { grid-area: car; width: 100%; }
+  .cta, .closed-note { grid-area: cta; }
+  .tags { grid-area: tags; align-self: center; width: 100%; }
+  .foot-links { grid-area: links; height: auto; }
+  .screen--home .powered { grid-area: powered; width: 100%; }
+
   .screen--camera {
     --u: min(calc(100vw / 800), calc(100vh / 530));
     --u: min(calc(100vw / 800), calc(100dvh / 530));
