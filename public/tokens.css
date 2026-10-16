@@ -1,0 +1,36 @@
+/* Pune Smile Day colour tokens, shared by index.html, admin.html and privacy.html.
+ * The canvas frame in app.js reads --purple, --peach, --card-end, --yellow and
+ * --white from here too, so change a colour once, here. */
+:root {
+  /* Brand (Sakal design team) */
+  --purple: #5B32A3;
+  --purple-deep: #402372;
+  --peach: #FFCCB5;
+  --card-end: #5E2D9B;
+  --yellow: #F3C11B;
+  --red: #DA2627;
+  --ink: #202020;
+  --white: #FFFFFF;
+
+  /* Tints of the purple, for surfaces and lines */
+  --purple-blob: #6436AD;      /* soft background blobs */
+  --purple-stage: #4A2A80;     /* behind the camera video */
+  --purple-ink: #3E1F63;       /* camera icon on the white shutter */
+  --lilac: #E9E1F5;            /* secondary text on deep purple */
+  --lilac-line: #CFC2E6;       /* outline buttons on deep purple */
+  --lilac-rule: #8C77B8;       /* dividers and tabs on deep purple */
+  --muted: #5A5170;            /* secondary text on white */
+  --placeholder: #6B6380;      /* input placeholders on white */
+
+  /* Smile Wall bar and camera button gradients */
+  --bar-from: #6B3FA8;
+  --bar-mid: #A97BA9;
+  --bar-to: #F7C4B4;
+  --cta-from: #7B4C9F;         /* white text stays above 4.5:1 along the pill */
+  --cta-mid: #9A5A94;
+  --cta-to: #A85A86;
+
+  /* Errors */
+  --error-bg: #FFE3E3;
+  --error-ink: #8A1012;
+}

@@ -7,7 +7,10 @@
   <title>Pune Smile Day · Smile Wall</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Poppins:wght@400;500;600;700&display=swap">
+  <!-- Fonts load without blocking the first paint (mobile data at 9 AM); text shows in the system font until they arrive. -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Poppins:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Poppins:wght@400;500;600;700&display=swap"></noscript>
+  <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,18 +22,18 @@
     <div class="skyline" aria-hidden="true"></div>
 
     <img class="top-logo" src="assets/sakal-logo-white.png" alt="Sakal" width="102" height="26">
-    <p class="date-chip" id="date-chip">1 Nov- 9:00 AM</p>
+    <p class="date-chip" id="date-chip">1 Nov · 9:00 AM</p>
     <img class="logo-badge" src="assets/sakal-logo-white.png" alt="" aria-hidden="true" width="78" height="20">
     <h1 class="home-logo"><img src="assets/pune-smile-day-logo.svg" alt="Pune Smile Day" width="216" height="154"></h1>
 
     <h2 class="wall-title">The Wall of Smiles</h2>
-    <div class="wall-bar"><span class="wall-bar__name">Smile Wall</span><span class="wall-bar__count" id="smile-count" aria-live="polite"></span></div>
+    <div class="wall-bar"><span class="wall-bar__name">Smile Wall</span><span class="wall-bar__count" id="smile-count"></span></div>
 
     <section class="carousel" aria-label="Photos on the Smile Wall">
       <button type="button" class="car-btn car-btn--prev" id="car-prev" aria-label="Previous photos">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <ul class="carousel__track" id="wall-grid" aria-live="polite"></ul>
+      <ul class="carousel__track" id="wall-grid"></ul>
       <button type="button" class="car-btn car-btn--next" id="car-next" aria-label="More photos">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
       </button>
@@ -81,6 +84,7 @@
       <div id="camera-error" class="stage__error" hidden>
         <p id="camera-error-msg">We couldn’t open the camera.</p>
         <button type="button" id="btn-retry-camera" class="btn btn--download">Try again</button>
+        <button type="button" id="btn-reload-camera" class="btn btn--download" hidden>Reload page</button>
       </div>
     </div>
 
@@ -92,7 +96,7 @@
       <button type="button" id="btn-flip" class="flip" aria-label="Switch to the back camera" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-flip"/></svg>
       </button>
-      <p class="hint">Tap to capture - 3 second countdown</p>
+      <p class="hint">Tap to capture · 3-second countdown</p>
     </div>
 
     <p id="controls-counting" class="hold" hidden>Hold that smile…</p>

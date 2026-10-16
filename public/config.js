@@ -2,10 +2,10 @@
 window.SMILE_CONFIG = {
   eventName: 'Pune Smile Day',
   eventDateShort: '1 Nov',
-  dateChip: '1 Nov- 9:00 AM',
+  dateChip: '1 Nov · 9:00 AM',
   hashtag: '#SmileDay',
   hashtags: ['#SmileDay', '#PuneSmileDay'],
-  frameSubtitle: 'Pune Smile Day - 1 Nov',
+  frameSubtitle: 'Pune Smile Day · 1 Nov',
   shareText: 'Smile with Pune! #SmileDay #PuneSmileDay',
   countdownSeconds: 3,
   // Saved photo: the frame card on purple, 4:5 for Instagram and WhatsApp
@@ -62,13 +62,16 @@ window.SMILE_CONFIG = {
     closed: 'The Smile Wall is closed. Thank you for smiling with Pune!',
     wallFailed: 'Could not load the Smile Wall. Please refresh the page.'
   },
-  colors: {
-    purple: '#5B32A3',
-    peach: '#FFCCB5',
-    cardEnd: '#5E2D9B',
-    yellow: '#F3C11B',
-    white: '#FFFFFF'
+  // Camera problems. "blocked" shows a Reload button, since browsers don't ask
+  // twice; "webview" is added inside Instagram, Facebook and other app browsers.
+  camera: {
+    unsupported: 'This browser can’t open the camera. Open this page in Chrome or Safari.',
+    blocked: 'Camera access is blocked for this page. Tap the icon next to the web address, allow Camera, then reload the page.',
+    webview: 'If that doesn’t work, open this page in Chrome or Safari from the ⋮ or ··· menu.',
+    busy: 'We couldn’t open the camera. Close other apps using it and try again.',
+    failed: 'Something went wrong taking the photo. Please try again.'
   },
+  // Frame colours come from tokens.css (--purple, --peach, --card-end, --yellow, --white).
   // Emoji stickers around the frame (design team files). Centre x/y and
   // size in design pixels: 390-wide artboard, origin at the top of the frame.
   stickers: [

@@ -102,10 +102,24 @@
     ]).catch(() => {});
   }
 
+  /* Frame colours, read once from tokens.css so the canvas matches the page. */
+  let colors = null;
+  function frameColors() {
+    if (!colors) {
+      const css = getComputedStyle(document.documentElement);
+      const get = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
+      colors = {
+        purple: get('--purple', '#5B32A3'), peach: get('--peach', '#FFCCB5'), cardEnd: get('--card-end', '#5E2D9B'),
+        yellow: get('--yellow', '#F3C11B'), white: get('--white', '#FFFFFF')
+      };
+    }
+    return colors;
+  }
+
   /* Paints card, yellow window border, text and stickers. With photo = null
    * the window is left transparent so the live video shows through. */
   function drawFrame(ctx, { cardHeight, photo, background, mirror = true }) {
-    const C = CFG.colors;
+    const C = frameColors();
     const { card, win } = FRAME;
 
     if (background) {
@@ -442,7 +456,7 @@
   async function startCamera() {
     $('camera-error').hidden = true;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      return showCameraError('This browser can’t open the camera. Try Chrome or Safari, over https.');
+      return showCameraError(CFG.camera.unsupported);
     }
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -459,9 +473,9 @@
     } catch (err) {
       console.error(err);
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
-      showCameraError(denied
-        ? 'Camera permission was blocked. Allow camera access in your browser settings, then try again.'
-        : 'We couldn’t open the camera. Close other apps using it and try again.');
+      // Browsers don't ask twice: once blocked, only the site settings and a reload help.
+      if (denied) showCameraError(webview ? `${CFG.camera.blocked} ${CFG.camera.webview}` : CFG.camera.blocked, true);
+      else showCameraError(CFG.camera.busy);
     }
   }
 
@@ -489,8 +503,10 @@
     flipping = false;
   }
 
-  function showCameraError(msg) {
+  function showCameraError(msg, blocked = false) {
     $('camera-error-msg').textContent = msg;
+    $('btn-retry-camera').hidden = blocked;
+    $('btn-reload-camera').hidden = !blocked;
     $('camera-error').hidden = false;
     $('btn-shutter').disabled = true;
   }
@@ -514,6 +530,14 @@
     title.innerHTML = review ? 'Looking great!' : 'Look at the camera<br>&amp; smile big';
     title.classList.toggle('camera__title--single', review);
     if (!review) requestAnimationFrame(paintOverlay);
+    requestAnimationFrame(revealControls);
+  }
+
+  /* On short screens (in-app browsers) the shutter or the review buttons can sit
+   * below the fold: scroll just enough to bring them into view. */
+  function revealControls() {
+    const el = phase === 'review' ? $('btn-retake') : phase === 'ready' ? $('btn-shutter') : null;
+    if (el && el.getBoundingClientRect().bottom > innerHeight) el.scrollIntoView({ block: 'end' });
   }
 
   function startCountdown() {
@@ -550,7 +574,7 @@
     } catch (e) {
       console.error(e);
       setPhase('ready');
-      showCameraError('Something went wrong taking the photo. Please try again.');
+      showCameraError(CFG.camera.failed);
     }
   }
 
@@ -680,9 +704,16 @@
     $('signup-ok').disabled = !($('signup-consent').checked && any);
   }
 
-  function signupError(msg) {
+  /* field: the input the message is about, so screen readers tie the two together. */
+  function signupError(msg, field) {
     $('signup-error').textContent = msg;
     $('signup-error').hidden = !msg;
+    ['signup-email', 'signup-phone'].forEach((id) => {
+      const bad = !!msg && id === field;
+      if (bad) { $(id).setAttribute('aria-invalid', 'true'); $(id).setAttribute('aria-describedby', 'signup-error'); }
+      else { $(id).removeAttribute('aria-invalid'); $(id).removeAttribute('aria-describedby'); }
+    });
+    if (field) $(field).focus();
   }
 
   function openSignup(afterUpload) {
@@ -737,9 +768,9 @@
     const S = CFG.signup;
     const email = credential ? '' : $('signup-email').value.trim();
     const phone = $('signup-phone').value.replace(/[\s\-().]/g, '').replace(/^(\+?91|0)(?=\d{10}$)/, '');
-    if (!credential && !email && !phone) return signupError(S.needContact);
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return signupError(S.badEmail);
-    if (phone && !/^[6-9]\d{9}$/.test(phone)) return signupError(S.badPhone);
+    if (!credential && !email && !phone) return signupError(S.needContact, 'signup-email');
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return signupError(S.badEmail, 'signup-email');
+    if (phone && !/^[6-9]\d{9}$/.test(phone)) return signupError(S.badPhone, 'signup-phone');
     const ok = $('signup-ok');
     ok.disabled = true;
     ok.textContent = 'Signing up…';
@@ -751,9 +782,10 @@
     } catch (err) {
       console.error(err);
       if (err.code === 'google_invalid') setGoogle(null);
+      const field = { invalid_email: 'signup-email', invalid_phone: 'signup-phone', contact_required: 'signup-email' }[err.code];
       signupError({
         invalid_email: S.badEmail, invalid_phone: S.badPhone, contact_required: S.needContact, google_invalid: S.googleFailed
-      }[err.code] || (err.status === 429 ? CFG.messages.slowDown : S.failed));
+      }[err.code] || (err.status === 429 ? CFG.messages.slowDown : S.failed), field);
       ok.textContent = S.ok;
       signupReady();
     }
@@ -828,6 +860,7 @@
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
     resetSlide();
     if (view === 'camera' && wallState.closed) { location.hash = '#wall'; return; }
+    window.scrollTo(0, 0);
     if (view === 'camera') {
       facing = 'user';        // always start on the selfie camera
       setPhase('ready');
@@ -836,7 +869,6 @@
       stopCamera();
       renderWall();
     }
-    window.scrollTo(0, 0);
   }
 
   const consentReady = () => {
@@ -874,13 +906,14 @@
   wallState.poll = setInterval(pollWall, CFG.pollSeconds * 1000);
 
   $('date-chip').textContent = CFG.dateChip;
-  $('home-tags').textContent = CFG.hashtags.join('');
+  $('home-tags').textContent = CFG.hashtags.join(' ');
   $('btn-shutter').addEventListener('click', startCountdown);
   $('btn-retake').addEventListener('click', retake);
   $('btn-add').addEventListener('click', addToWall);
   $('btn-download').addEventListener('click', download);
   $('btn-share').addEventListener('click', share);
   $('btn-retry-camera').addEventListener('click', startCamera);
+  $('btn-reload-camera').addEventListener('click', () => location.reload());
   $('btn-flip').addEventListener('click', flipCamera);
   $('wall-grid').addEventListener('scroll', () => {
     const t = $('wall-grid');

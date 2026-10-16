@@ -1,15 +1,8 @@
 /* Pune Smile Day — Sakal design team layout.
  * Every screen is the 390 x 844 design artboard. --u is one design pixel,
  * scaled so the whole artboard fits the viewport (capped near 430px wide). */
+/* Colours live in tokens.css (shared with admin.html and privacy.html). */
 :root {
-  --purple: #5B32A3;
-  --purple-deep: #402372;
-  --peach: #FFCCB5;
-  --card-end: #5E2D9B;
-  --yellow: #F3C11B;
-  --red: #DA2627;
-  --ink: #202020;
-  --white: #FFFFFF;
   --sans: 'Poppins', system-ui, sans-serif;
   --round: 'Fredoka', 'Poppins', system-ui, sans-serif;
   /* One design pixel. Fits the artboard to the viewport, but never shrinks below
@@ -44,20 +37,25 @@ svg { display: block; }
 .screen {
   position: relative;
   width: calc(390 * var(--u));
-  height: calc(844 * var(--u));
+  height: calc((844 - var(--shift)) * var(--u));
   margin: 0 auto;
   overflow: hidden;
   isolation: isolate;
 }
+.screen { --shift: 0; }     /* design px everything below the logo moves up (short phones) */
 .screen > * { position: absolute; }
 
+/* The scrim darkens the lower skyline so the hashtags, links and "powered by"
+ * that sit over it keep 4.5:1; the rooftops above stay bright. */
 .skyline {
-  left: 0; top: calc(667 * var(--u)); width: 100%; height: calc(177 * var(--u));
-  background: url('assets/skyline.png') center / 100% 100% no-repeat;
+  left: 0; top: calc((667 - var(--shift)) * var(--u)); width: 100%; height: calc(177 * var(--u));
+  background:
+    linear-gradient(to bottom, rgb(64 35 114 / 0) 20%, rgb(64 35 114 / .72) 38%),
+    url('assets/skyline.png') center / 100% 100% no-repeat;
   z-index: -1;
 }
 
-.blob { z-index: -2; border-radius: 50%; background: #6436AD; opacity: .55; }
+.blob { z-index: -2; border-radius: 50%; background: var(--purple-blob); opacity: .55; }
 .blob--a { left: calc(-170 * var(--u)); top: calc(-40 * var(--u)); width: calc(420 * var(--u)); height: calc(290 * var(--u)); transform: rotate(-18deg); }
 .blob--b { left: calc(250 * var(--u)); top: calc(250 * var(--u)); width: calc(320 * var(--u)); height: calc(170 * var(--u)); transform: rotate(-12deg); }
 
@@ -71,27 +69,27 @@ svg { display: block; }
 }
 .top-logo { left: calc(16 * var(--u)); top: calc(58 * var(--u)); width: calc(102 * var(--u)); height: auto; }
 .wall-title {
-  margin: 0; left: 0; top: calc(316 * var(--u)); width: 100%;
+  margin: 0; left: 0; top: calc((316 - var(--shift)) * var(--u)); width: 100%;
   text-align: center; font-family: var(--round); font-size: calc(28 * var(--u)); font-weight: 700;
   line-height: calc(34 * var(--u)); text-transform: uppercase;
 }
 .wall-bar {
-  left: calc(21 * var(--u)); top: calc(366 * var(--u)); width: calc(348 * var(--u)); height: calc(52 * var(--u));
+  left: calc(21 * var(--u)); top: calc((366 - var(--shift)) * var(--u)); width: calc(348 * var(--u)); height: calc(52 * var(--u));
   padding: 0 calc(22 * var(--u)) 0 calc(11 * var(--u));
   display: flex; align-items: center; justify-content: space-between;
   border: 1px solid var(--white); border-radius: calc(26 * var(--u));
-  background: linear-gradient(90deg, #6B3FA8 0%, #A97BA9 55%, #F7C4B4 100%);
+  background: linear-gradient(90deg, var(--bar-from) 0%, var(--bar-mid) 55%, var(--bar-to) 100%);
 }
 .wall-bar__name { font-size: calc(22 * var(--u)); font-weight: 600; }
 .wall-bar__count { font-size: calc(16 * var(--u)); font-weight: 500; color: var(--purple-deep); }
 .closed-note {
-  margin: 0; left: calc(32 * var(--u)); top: calc(662 * var(--u)); width: calc(326 * var(--u));
+  margin: 0; left: calc(32 * var(--u)); top: calc((662 - var(--shift)) * var(--u)); width: calc(326 * var(--u));
   padding: calc(12 * var(--u)) calc(18 * var(--u));
   border-radius: calc(24 * var(--u)); background: var(--purple-deep);
   text-align: center; font-size: calc(16 * var(--u)); font-weight: 600; line-height: 1.35;
 }
 .foot-links {
-  margin: 0; left: 0; top: calc(758 * var(--u)); width: 100%; height: calc(44 * var(--u));
+  margin: 0; left: 0; top: calc((758 - var(--shift)) * var(--u)); width: 100%; height: calc(44 * var(--u));
   display: flex; align-items: center; justify-content: center; gap: calc(18 * var(--u));
   font-size: max(12px, calc(13 * var(--u)));
 }
@@ -99,12 +97,12 @@ svg { display: block; }
   display: inline-flex; align-items: center; height: 100%; min-height: 44px; padding: 0 4px;
   border: 0; background: none; color: var(--white); font: inherit; text-decoration: underline; text-underline-offset: 3px;
 }
-.tags { margin: 0; left: 0; top: calc(738 * var(--u)); width: 100%; text-align: center; font-size: max(12px, calc(12 * var(--u))); font-weight: 500; color: var(--yellow); }
+.tags { margin: 0; left: 0; top: calc((738 - var(--shift)) * var(--u)); width: 100%; text-align: center; font-size: max(12px, calc(12 * var(--u))); font-weight: 500; color: var(--yellow); }
 .logo-badge { left: calc(156 * var(--u)); top: calc(121 * var(--u)); width: calc(78 * var(--u)); height: auto; }
 .home-logo { margin: 0; left: calc(88 * var(--u)); top: calc(146 * var(--u)); width: calc(216 * var(--u)); }
 .home-logo img { display: block; width: 100%; height: auto; }
 
-.carousel { left: 0; top: calc(425 * var(--u)); width: 100%; height: calc(212 * var(--u)); }
+.carousel { left: 0; top: calc((425 - var(--shift)) * var(--u)); width: 100%; height: calc(212 * var(--u)); }
 .carousel__track {
   list-style: none; margin: 0; padding: calc(10 * var(--u)) calc(32 * var(--u));
   display: flex; gap: calc(10 * var(--u));
@@ -116,14 +114,13 @@ svg { display: block; }
 .carousel__track li { flex: 0 0 auto; width: calc(153 * var(--u)); height: calc(191 * var(--u)); scroll-snap-align: start; }
 .carousel__track img, .carousel__track canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
 .carousel__track li { position: relative; }
-/* Report (others' photos) or delete (your own) button on each tile; 44px hit area */
+/* Report (others' photos) or delete (your own) button on each tile */
 .tile__act {
   position: absolute; right: calc(8 * var(--u)); bottom: calc(8 * var(--u));
   width: calc(30 * var(--u)); height: calc(30 * var(--u)); padding: 0;
   border: 0; border-radius: 50%; background: rgba(64, 35, 114, .85); color: var(--white);
   display: grid; place-items: center;
 }
-.tile__act::before { content: ''; position: absolute; inset: -7px; }
 .tile__act svg { width: 58%; height: 58%; }
 .tile__act--own { background: var(--yellow); color: var(--purple-deep); }
 .car-btn {
@@ -132,13 +129,17 @@ svg { display: block; }
   border: 0; border-radius: 50%; background: rgba(64, 35, 114, .85); color: var(--white);
   display: grid; place-items: center;
 }
-.car-btn::before { content: ''; position: absolute; inset: calc(-8 * var(--u)); }
+/* Small round buttons get a 44px hit area, whatever the screen width */
+.tile__act::before, .car-btn::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: max(44px, 100%); height: max(44px, 100%); transform: translate(-50%, -50%);
+}
 .car-btn svg { width: 60%; height: 60%; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .car-btn--prev { left: calc(10 * var(--u)); }
 .car-btn--next { right: calc(10 * var(--u)); }
 
 .cta {
-  left: calc(46 * var(--u)); top: calc(656 * var(--u));
+  left: calc(46 * var(--u)); top: calc((656 - var(--shift)) * var(--u));
   width: calc(316 * var(--u)); height: calc(68 * var(--u));
   text-decoration: none;
 }
@@ -148,7 +149,7 @@ svg { display: block; }
   padding-left: calc(25 * var(--u));
   display: flex; flex-direction: column; justify-content: center;
   border-radius: calc(24 * var(--u));
-  background: linear-gradient(90deg, #7B4C9F 0%, #9A5A94 50%, #A85A86 100%);   /* white text stays above 4.5:1 along the whole pill */
+  background: linear-gradient(90deg, var(--cta-from) 0%, var(--cta-mid) 50%, var(--cta-to) 100%);
   box-shadow: 0 calc(4 * var(--u)) calc(14 * var(--u)) rgba(30, 10, 60, .25);
 }
 .cta__title { font-size: calc(17 * var(--u)); font-weight: 700; line-height: 1.2; }
@@ -202,7 +203,7 @@ svg { display: block; }
   left: calc(73 * var(--u)); top: calc(65 * var(--u));
   width: calc(245 * var(--u)); height: calc(310 * var(--u));
 }
-.stage__video { object-fit: cover; transform: scaleX(-1); background: #4A2A80; }   /* selfie view is mirrored */
+.stage__video { object-fit: cover; transform: scaleX(-1); background: var(--purple-stage); }   /* selfie view is mirrored */
 .stage--back .stage__video { transform: none; }
 .stage__frame { left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
 .stage__countdown {
@@ -218,10 +219,10 @@ svg { display: block; }
 .stage__error {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: calc(12 * var(--u)); padding: calc(20 * var(--u)); text-align: center;
-  background: #4A2A80; font-size: calc(14 * var(--u));
+  background: var(--purple-stage); font-size: calc(14 * var(--u));
 }
 .stage__error p { margin: 0; }
-.stage__error .btn { position: static; padding: 0 calc(20 * var(--u)); }
+.stage__error .btn { position: static; width: auto; padding: 0 calc(20 * var(--u)); white-space: nowrap; }
 
 .result { left: 0; top: calc(192 * var(--u)); width: 100%; height: calc(487.5 * var(--u)); animation: settle .45s ease-out both; }
 @keyframes settle { from { opacity: 0; transform: scale(.98); } }
@@ -230,7 +231,7 @@ svg { display: block; }
 .shutter {
   position: absolute; left: calc(149.5 * var(--u)); top: calc(659.5 * var(--u));
   width: calc(91 * var(--u)); height: calc(91 * var(--u)); padding: 0;
-  border: 0; border-radius: 50%; background: var(--white); color: #3E1F63;
+  border: 0; border-radius: 50%; background: var(--white); color: var(--purple-ink);
   display: grid; place-items: center;
   box-shadow: 0 calc(6 * var(--u)) calc(18 * var(--u)) rgba(30, 10, 60, .35);
 }
@@ -261,6 +262,7 @@ svg { display: block; }
   display: grid; place-items: center;
   font-size: calc(15 * var(--u)); font-weight: 600;
 }
+.btn, .back-btn { min-height: 44px; }     /* --u shrinks on narrow and sideways phones */
 .btn:active { transform: scale(.97); }
 .btn:disabled { opacity: .6; }
 .btn--add {
@@ -273,7 +275,7 @@ svg { display: block; }
 .btn--share { left: calc(261 * var(--u)); top: calc(727 * var(--u)); width: calc(103 * var(--u)); background: var(--purple-deep); color: var(--white); }
 
 .powered {
-  margin: 0; left: 0; top: calc(808 * var(--u)); width: 100%;
+  margin: 0; left: 0; top: calc((808 - var(--shift)) * var(--u)); width: 100%;
   text-align: center; font-size: max(12px, calc(12 * var(--u)));
 }
 .powered { display: flex; align-items: center; justify-content: center; gap: calc(5 * var(--u)); }
@@ -296,9 +298,9 @@ svg { display: block; }
 }
 .sheet__title { margin: 0 0 2px; font-family: var(--round); font-size: 24px; font-weight: 700; line-height: 1.2; }
 .sheet__text { margin: 0; font-size: 15px; line-height: 1.5; }
-.sheet__note { margin: 0; font-size: 13px; line-height: 1.5; color: #E9E1F5; }
+.sheet__note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--lilac); }
 .sheet__note a { color: var(--yellow); text-underline-offset: 3px; }
-.sheet__error { margin: 0; padding: 10px 12px; border-radius: 10px; background: #FFE3E3; color: #8A1012; font-size: 14px; line-height: 1.4; }
+.sheet__error { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--error-bg); color: var(--error-ink); font-size: 14px; line-height: 1.4; }
 .check {
   display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start;
   min-height: 44px; padding: 4px 0; font-size: 15px; line-height: 1.45; cursor: pointer;
@@ -309,7 +311,7 @@ svg { display: block; }
 }
 .sheet__primary { border: 0; background: var(--yellow); color: var(--purple-deep); margin-top: 4px; }
 .sheet__primary:disabled { opacity: .45; cursor: not-allowed; }
-.sheet__secondary { border: 1px solid #CFC2E6; background: transparent; color: var(--white); }
+.sheet__secondary { border: 1px solid var(--lilac-line); background: transparent; color: var(--white); }
 .sheet__primary:focus-visible { outline-color: var(--white); }
 
 /* Event-update sign-up */
@@ -321,13 +323,13 @@ svg { display: block; }
   font: 400 16px var(--sans);   /* 16px stops iOS zooming in on focus */
 }
 .field__tel { display: flex; align-items: center; height: 48px; border-radius: 12px; background: var(--white); overflow: hidden; }
-.field__tel > span { padding: 0 2px 0 14px; font-size: 16px; color: #5A5170; }
+.field__tel > span { padding: 0 2px 0 14px; font-size: 16px; color: var(--muted); }
 .field__tel input { flex: 1; min-width: 0; height: 100%; padding-left: 6px; border-radius: 0; }
-.field input::placeholder { color: #6B6380; }
+.field input::placeholder { color: var(--placeholder); }
 .signup-google { display: flex; flex-direction: column; gap: 14px; }
 .signup-gbtn { display: flex; justify-content: center; min-height: 44px; color-scheme: light; }
-.signup-or { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #E9E1F5; }
-.signup-or::before, .signup-or::after { content: ''; flex: 1; height: 1px; background: #8C77B8; }
+.signup-or { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--lilac); }
+.signup-or::before, .signup-or::after { content: ''; flex: 1; height: 1px; background: var(--lilac-rule); }
 .signup-chip {
   margin: 0; min-height: 48px; padding: 6px 4px 6px 14px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -339,7 +341,7 @@ svg { display: block; }
 .mine-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .mine-list li { display: flex; flex-direction: column; gap: 8px; }
 .mine-list img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 8px; background: var(--purple); }
-.mine-list__del { height: 44px; border: 0; border-radius: 22px; background: var(--white); color: #8A1012; font-weight: 600; }
+.mine-list__del { height: 44px; border: 0; border-radius: 22px; background: var(--white); color: var(--error-ink); font-weight: 600; }
 
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 10;
@@ -351,6 +353,44 @@ svg { display: block; }
   transition: opacity .25s, transform .25s cubic-bezier(.16, 1, .3, 1);
 }
 .toast--on { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Short phones ----------
+ * In-app browsers (Instagram, WhatsApp) leave 600-700px of height. The logo
+ * shrinks and everything below it moves up, so the camera button stays in view. */
+@media (max-width: 767px) and (max-height: 700px) and (orientation: portrait) {
+  .screen--home { --shift: 60; }
+  .logo-badge { top: calc(104 * var(--u)); }
+  .home-logo { left: calc(115 * var(--u)); top: calc(126 * var(--u)); width: calc(160 * var(--u)); }
+}
+
+/* ---------- Phones on their side ----------
+ * The portrait artboard would put the shutter far below the fold. The camera
+ * gets an 800 x 530 artboard instead: the frame on the left, title and
+ * controls on the right, all within one screen. */
+@media (orientation: landscape) and (max-height: 599px) {
+  .screen--camera {
+    --u: min(calc(100vw / 800), calc(100vh / 530));
+    --u: min(calc(100vw / 800), calc(100dvh / 530));
+    width: calc(800 * var(--u)); height: calc(530 * var(--u));
+  }
+  .screen--camera .stage, .screen--camera .result { left: calc(10 * var(--u)); top: 0; width: calc(390 * var(--u)); }
+  .screen--camera .skyline { left: calc(400 * var(--u)); top: auto; bottom: 0; width: calc(400 * var(--u)); height: calc(182 * var(--u)); }
+  .ghost { display: none; }
+  .back-btn { left: calc(440 * var(--u)); top: calc(24 * var(--u)); }
+  .live-tag { left: calc(721 * var(--u)); top: calc(35 * var(--u)); }
+  .camera__title, .hint, .hold, .screen--camera .powered { left: calc(420 * var(--u)); width: calc(360 * var(--u)); }
+  .camera__title { top: calc(100 * var(--u)); }
+  .camera__title--single { top: calc(130 * var(--u)); }
+  .shutter { left: calc(554.5 * var(--u)); top: calc(220 * var(--u)); }
+  .flip { left: calc(677 * var(--u)); top: calc(241.5 * var(--u)); }
+  .hint { top: calc(326 * var(--u)); }
+  .hold { top: calc(250 * var(--u)); }
+  .btn--add { left: calc(431 * var(--u)); top: calc(200 * var(--u)); }
+  .btn--retake { left: calc(432 * var(--u)); top: calc(272 * var(--u)); }
+  .btn--download { left: calc(541 * var(--u)); top: calc(272 * var(--u)); }
+  .btn--share { left: calc(665 * var(--u)); top: calc(272 * var(--u)); }
+  .screen--camera .powered { top: calc(494 * var(--u)); }
+}
 
 /* ---------- Tablets ----------
  * Phones use the fixed 390 x 844 artboard. From 768px wide (and at least 600px tall,
@@ -416,6 +456,14 @@ svg { display: block; }
   .screen--home .skyline { opacity: .9; }
 }
 
+/* Reduced motion: nothing moves or scales, but state changes still fade so
+ * the countdown, the captured photo, sheets and toasts stay noticeable. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .cta__sub svg { animation: none; }
+  .cta--settle .cta__icon { transition: none; }
+  .stage__countdown span, .result, .sheet[open] { animation: fade .25s ease-out both; }
+  .stage__flash.go { animation-duration: .3s; }
+  .toast { transform: translate(-50%, 0); transition: opacity .25s; }
+  .shutter:active, .flip:active, .btn:active { transform: none; }
 }
+@keyframes fade { from { opacity: 0; } }
