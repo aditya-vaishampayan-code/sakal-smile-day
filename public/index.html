@@ -52,6 +52,7 @@
 
     <p class="foot-links">
       <button type="button" id="btn-mine" class="link-btn" hidden>Delete my photo</button>
+      <button type="button" id="btn-updates" class="link-btn">Get event updates</button>
       <a href="privacy.html">Privacy notice</a>
     </p>
 
@@ -88,10 +89,10 @@
       <button type="button" id="btn-shutter" class="shutter" aria-label="Capture photo, 3-second countdown">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-camera"/></svg>
       </button>
-      <p class="hint">Tap to capture - 3 second countdown</p>
       <button type="button" id="btn-flip" class="flip" aria-label="Switch to the back camera" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-flip"/></svg>
       </button>
+      <p class="hint">Tap to capture - 3 second countdown</p>
     </div>
 
     <p id="controls-counting" class="hold" hidden>Hold that smile…</p>
@@ -117,6 +118,38 @@
       <button type="button" id="consent-ok" class="sheet__primary" disabled></button>
       <button type="button" id="consent-cancel" class="sheet__secondary"></button>
     </div>
+  </dialog>
+
+  <!-- Event-update sign-up. Google (One Tap or the button) only fills in a verified
+       email; the tick-box is the consent. -->
+  <dialog id="signup" class="sheet" aria-labelledby="signup-title">
+    <form class="sheet__body" id="signup-form" novalidate>
+      <p class="sheet__eyebrow" id="signup-eyebrow" hidden></p>
+      <h2 id="signup-title" class="sheet__title"></h2>
+      <p id="signup-text" class="sheet__text"></p>
+      <div id="signup-google" class="signup-google" hidden>
+        <div id="signup-gbtn" class="signup-gbtn"></div>
+        <div id="signup-onetap"></div>
+        <p class="signup-or"><span>or</span></p>
+      </div>
+      <p id="signup-gmail" class="signup-chip" hidden>
+        <span id="signup-gmail-text"></span>
+        <button type="button" id="signup-gmail-change" class="link-btn">Change</button>
+      </p>
+      <label class="field" id="signup-email-field">
+        <span id="signup-email-label"></span>
+        <input id="signup-email" type="email" autocomplete="email" inputmode="email" maxlength="254" spellcheck="false">
+      </label>
+      <label class="field">
+        <span id="signup-phone-label"></span>
+        <span class="field__tel"><span aria-hidden="true">+91</span><input id="signup-phone" type="tel" autocomplete="tel-national" inputmode="numeric" maxlength="14" placeholder="98765 43210"></span>
+      </label>
+      <label class="check"><input type="checkbox" id="signup-consent"><span id="signup-consent-text"></span></label>
+      <p class="sheet__note"><span id="signup-note"></span> <a href="privacy.html#updates" target="_blank" rel="noopener">Privacy notice</a></p>
+      <p class="sheet__error" id="signup-error" role="alert" hidden></p>
+      <button type="submit" id="signup-ok" class="sheet__primary" disabled></button>
+      <button type="button" id="signup-cancel" class="sheet__secondary"></button>
+    </form>
   </dialog>
 
   <dialog id="ask" class="sheet" aria-labelledby="ask-title">
@@ -146,6 +179,9 @@
     <symbol id="icon-trash" viewBox="0 0 24 24">
       <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
+    <symbol id="icon-flip" viewBox="0 0 24 24">
+      <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
     <symbol id="icon-camera" viewBox="0 0 24 24">
       <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       <circle cx="12" cy="13" r="3.8" fill="none" stroke="currentColor" stroke-width="1.8"/>
@@ -156,6 +192,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-    <symbol id="icon-flip" viewBox="0 0 24 24">
-      <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>

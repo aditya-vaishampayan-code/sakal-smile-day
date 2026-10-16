@@ -1,6 +1,7 @@
 // Runs worker/index.js in plain Node, for machines where `wrangler dev` can't
 // start (workerd needs a recent Visual C++ runtime on Windows). D1 is played
-// by node:sqlite, R2 by an in-memory Map, static assets from public/.
+// by node:sqlite, R2 by an in-memory Map, the upload queue by a timer that
+// hands batches to worker.queue(), static assets from public/.
 //   node test/dev-server.mjs            -> http://localhost:8787
 // Not used in production; `wrangler dev` is the real local runtime.
 import http from 'node:http';
@@ -43,11 +44,29 @@ function d1(file) {
 function r2() {
   const m = new Map();
   return {
-    put: async (key, bytes) => { m.set(key, Buffer.from(bytes)); },
-    get: async (key) => (m.has(key) ? { body: m.get(key) } : null),
+    put: async (key, bytes, opts = {}) => { m.set(key, { body: Buffer.from(bytes), customMetadata: opts.customMetadata || {} }); },
+    get: async (key) => m.get(key) || null,
+    head: async (key) => (m.has(key) ? { customMetadata: m.get(key).customMetadata } : null),
     delete: async (keys) => { [].concat(keys).forEach((k) => m.delete(k)); },
     list: async ({ limit = 1000 } = {}) => ({ objects: [...m.keys()].slice(0, limit).map((key) => ({ key })) }),
     size: () => m.size
+  };
+}
+
+// Like Cloudflare Queues: batches of up to 100, sent after `wait` ms, retried on error.
+function queue(getEnv, wait = 1000) {
+  const pending = [];
+  let timer = null;
+  const flush = async () => {
+    timer = null;
+    const bodies = pending.splice(0, 100);
+    try {
+      await worker.queue({ messages: bodies.map((body) => ({ body })) }, getEnv());
+    } catch (e) { console.error(e); pending.unshift(...bodies); }
+    if (pending.length) timer = setTimeout(flush, wait);
+  };
+  return {
+    send: async (body) => { pending.push(structuredClone(body)); timer ??= setTimeout(flush, wait); }
   };
 }
 
@@ -84,6 +103,7 @@ export async function start(port = PORT) {
   const DB = d1(process.env.DB_FILE || ':memory:');
   DB.exec(await readFile(join(root, 'worker', 'schema.sql'), 'utf8'));
   const env = { ...(await vars()), DB, PHOTOS: r2(), ASSETS: { fetch: async () => new Response('Not found', { status: 404 }) } };
+  env.UPLOADS = queue(() => env);
   const ctx = { waitUntil: (p) => p.catch(console.error) };
 
   const server = http.createServer(async (req, res) => {

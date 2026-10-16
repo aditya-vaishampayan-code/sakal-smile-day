@@ -18,13 +18,28 @@
     if (!res.ok) throw new ApiError(res.status, data.error);
     return data;
   }
+  /* Retries quietly after a dropped connection or a server error (5xx), waiting
+   * a little longer each time, so a 9:00 AM rush or a busy cell tower spreads
+   * out instead of failing. Real answers (429, 4xx) come back at once. */
+  async function withRetry(fn, waits = CFG.uploadRetryMs) {
+    for (let i = 0; ; i++) {
+      try { return await fn(); } catch (e) {
+        const transient = !(e instanceof ApiError) || e.status >= 500;
+        if (!transient || i >= waits.length) throw e;
+        await new Promise((r) => setTimeout(r, waits[i] * (0.75 + Math.random() / 2)));
+      }
+    }
+  }
   const api = {
     wall: (before) => call('GET', `/api/wall${before ? `?before=${before}` : ''}`),
-    add: (blob) => call('POST', '/api/photos', {
+    add: (blob) => withRetry(() => call('POST', '/api/photos', {
       body: blob, headers: { 'Content-Type': 'image/jpeg', 'X-Consent': CFG.consentVersion }
-    }),
+    })),
     remove: (id, token) => call('DELETE', `/api/photos/${id}`, { headers: { 'X-Delete-Token': token } }),
-    report: (id) => call('POST', `/api/photos/${id}/report`)
+    report: (id) => call('POST', `/api/photos/${id}/report`),
+    signup: (body) => withRetry(() => call('POST', '/api/signups', {
+      body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' }
+    }))
   };
 
   /* Photos added from this phone, with the secret that lets this phone delete them.
@@ -207,8 +222,9 @@
     }
     track.innerHTML = '';
     wallState.ids.clear();
-    // A photo added seconds ago can be missing from the briefly cached first page.
-    const fresh = mine.all().filter((p) => Date.now() - p.t < 60000 && !data.photos.some((q) => q.id === p.id));
+    // A photo added seconds ago can still be in the upload queue or missing from
+    // the briefly cached first page.
+    const fresh = mine.all().filter((p) => Date.now() - p.t < 120000 &&!data.photos.some((q) => q.id === p.id));
     appendPhotos([...fresh, ...data.photos]);
     wallState.next = data.next;
     setCount(data.count + fresh.length);
@@ -419,6 +435,9 @@
   let resultBlob = null;
   let resultUrl = null;
   let countdownTimer = null;
+  let facing = 'user';           // 'user' = selfie camera, 'environment' = back camera
+  let mirrored = true;           // only the selfie view is mirrored
+  let flipping = false;
 
   async function startCamera() {
     $('camera-error').hidden = true;
@@ -431,13 +450,14 @@
         audio: false
       });
       video.srcObject = stream;
+      const seen = stream.getVideoTracks()[0].getSettings().facingMode;   // what the browser really opened
+      mirrored = (seen || facing) !== 'environment';
+      $('stage').classList.toggle('stage--back', !mirrored);
       await video.play().catch(() => {});
       $('btn-shutter').disabled = false;
+      showFlip();
     } catch (err) {
       console.error(err);
-  let facing = 'user';           // 'user' = selfie camera, 'environment' = back camera
-  let mirrored = true;           // only the selfie view is mirrored
-  let flipping = false;
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
       showCameraError(denied
         ? 'Camera permission was blocked. Allow camera access in your browser settings, then try again.'
@@ -445,26 +465,6 @@
     }
   }
 
-  function showCameraError(msg) {
-    $('camera-error-msg').textContent = msg;
-    $('camera-error').hidden = false;
-    $('btn-shutter').disabled = true;
-  }
-      const seen = stream.getVideoTracks()[0].getSettings().facingMode;   // what the browser really opened
-      mirrored = (seen || facing) !== 'environment';
-      $('stage').classList.toggle('stage--back', !mirrored);
-
-  function stopCamera() {
-      showFlip();
-    if (stream) stream.getTracks().forEach((t) => t.stop());
-    stream = null;
-    video.srcObject = null;
-  }
-
-  function setPhase(next) {
-    phase = next;
-    const review = next === 'review';
-    $('controls-ready').hidden = next !== 'ready';
   /* The switch button only appears when the phone has more than one camera. */
   async function showFlip() {
     let cams = 2;
@@ -489,6 +489,22 @@
     flipping = false;
   }
 
+  function showCameraError(msg) {
+    $('camera-error-msg').textContent = msg;
+    $('camera-error').hidden = false;
+    $('btn-shutter').disabled = true;
+  }
+
+  function stopCamera() {
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+    video.srcObject = null;
+  }
+
+  function setPhase(next) {
+    phase = next;
+    const review = next === 'review';
+    $('controls-ready').hidden = next !== 'ready';
     $('controls-counting').hidden = next !== 'counting';
     $('controls-review').hidden = !review;
     $('countdown').hidden = next !== 'counting';
@@ -601,7 +617,9 @@
       $('consent').close();
       $('btn-add').disabled = true;     // one photo per capture
       location.hash = '#wall';
-      toast(CFG.messages.added);
+      // Asked once per phone, after the photo is up, never before.
+      if (signupSeen()) toast(CFG.messages.added);
+      else openSignup(true);
     } catch (e) {
       console.error(e);
       const msg = e.status === 429 ? CFG.messages.slowDown
@@ -611,6 +629,133 @@
       $('consent-error').hidden = false;
       ok.textContent = CFG.consent.ok;
       ok.disabled = e.status === 410;
+    }
+  }
+
+  /* ---------------- Event-update sign-up ----------------
+   * Optional, after the photo is up (or from "Get event updates"). Google One Tap
+   * or the Google button only fills in a verified email; the unticked consent box
+   * is what signs someone up. The Google script loads only when the sheet opens. */
+  const SIGNUP_KEY = 'smileday-signup';      // 'done' | 'dismissed' on this phone
+  const signupState = () => { try { return localStorage.getItem(SIGNUP_KEY); } catch { return null; } };
+  const signupSeen = () => !!signupState();
+  const setSignup = (v) => { try { localStorage.setItem(SIGNUP_KEY, v); } catch {} };
+  // Google blocks sign-in inside app webviews (Instagram, Facebook, Android WebView): type instead.
+  const webview = /Instagram|FBAN|FBAV|FB_IAB|Line\/|Snapchat|; wv\)/i.test(navigator.userAgent);
+  let credential = null, gis = null, gisReady = false;
+
+  function loadGoogle() {
+    if (!CFG.googleClientId || webview) return Promise.reject(new Error('Google sign-in unavailable'));
+    gis ??= new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.onload = () => (window.google && google.accounts ? resolve(google.accounts.id) : reject(new Error('no google.accounts')));
+      s.onerror = () => { gis = null; s.remove(); reject(new Error('Google script failed')); };
+      document.head.appendChild(s);
+    });
+    return gis;
+  }
+
+  function jwtEmail(token) {
+    try {
+      const p = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const bytes = Uint8Array.from(atob(p), (c) => c.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes)).email || '';
+    } catch { return ''; }
+  }
+
+  function setGoogle(token) {
+    credential = token;
+    const email = token ? jwtEmail(token) : '';
+    $('signup-gmail').hidden = !token;
+    $('signup-gmail-text').textContent = email ? `✓ ${email}` : '';
+    $('signup-email-field').hidden = !!token;
+    if (token) $('signup-google').hidden = true;
+    signupReady();
+  }
+
+  function signupReady() {
+    const any = credential || $('signup-email').value.trim() || $('signup-phone').value.trim();
+    $('signup-ok').disabled = !($('signup-consent').checked && any);
+  }
+
+  function signupError(msg) {
+    $('signup-error').textContent = msg;
+    $('signup-error').hidden = !msg;
+  }
+
+  function openSignup(afterUpload) {
+    const S = CFG.signup;
+    $('signup-eyebrow').textContent = CFG.messages.added;
+    $('signup-eyebrow').hidden = !afterUpload;
+    $('signup-email').value = '';
+    $('signup-phone').value = '';
+    $('signup-consent').checked = false;
+    $('signup-ok').textContent = S.ok;
+    signupError('');
+    setGoogle(null);
+    $('signup').showModal();
+    openSignupGoogle();
+  }
+
+  function openSignupGoogle() {
+    loadGoogle().then((id) => {
+      if (!$('signup').open || credential) return;
+      if (!gisReady) {
+        id.initialize({
+          client_id: CFG.googleClientId,
+          callback: (r) => { setGoogle(r.credential); signupError(''); },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          context: 'signup',
+          itp_support: true,
+          use_fedcm_for_prompt: true,
+          prompt_parent_id: 'signup-onetap'   // without FedCM (Safari) One Tap would sit behind the modal
+        });
+        gisReady = true;
+      }
+      $('signup-google').hidden = false;
+      const box = $('signup-gbtn');
+      box.innerHTML = '';
+      id.renderButton(box, {
+        type: 'standard', theme: 'outline', size: 'large', shape: 'pill',
+        text: 'continue_with', logo_alignment: 'center', width: Math.min(400, box.clientWidth || 300)
+      });
+      id.prompt();
+    }).catch(() => { $('signup-google').hidden = true; });
+  }
+
+  function closeSignup(state) {
+    if (state) setSignup(state);
+    if ($('signup').open) $('signup').close();
+    $('btn-updates').hidden = signupState() === 'done';
+  }
+
+  async function submitSignup(e) {
+    e.preventDefault();
+    const S = CFG.signup;
+    const email = credential ? '' : $('signup-email').value.trim();
+    const phone = $('signup-phone').value.replace(/[\s\-().]/g, '').replace(/^(\+?91|0)(?=\d{10}$)/, '');
+    if (!credential && !email && !phone) return signupError(S.needContact);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return signupError(S.badEmail);
+    if (phone && !/^[6-9]\d{9}$/.test(phone)) return signupError(S.badPhone);
+    const ok = $('signup-ok');
+    ok.disabled = true;
+    ok.textContent = 'Signing up…';
+    signupError('');
+    try {
+      await api.signup({ consent: CFG.signupConsentVersion, credential: credential || undefined, email: email || undefined, phone: phone || undefined });
+      closeSignup('done');
+      toast(S.done);
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'google_invalid') setGoogle(null);
+      signupError({
+        invalid_email: S.badEmail, invalid_phone: S.badPhone, contact_required: S.needContact, google_invalid: S.googleFailed
+      }[err.code] || (err.status === 429 ? CFG.messages.slowDown : S.failed));
+      ok.textContent = S.ok;
+      signupReady();
     }
   }
 
@@ -684,6 +829,7 @@
     resetSlide();
     if (view === 'camera' && wallState.closed) { location.hash = '#wall'; return; }
     if (view === 'camera') {
+      facing = 'user';        // always start on the selfie camera
       setPhase('ready');
       startCamera();
     } else {
@@ -705,6 +851,23 @@
   $('consent-age').addEventListener('change', consentReady);
   $('consent-ok').addEventListener('click', confirmConsent);
   $('consent-cancel').addEventListener('click', () => $('consent').close());
+  const S = CFG.signup;
+  $('signup-title').textContent = S.title;
+  $('signup-text').textContent = S.text;
+  $('signup-email-label').textContent = S.emailLabel;
+  $('signup-phone-label').textContent = S.phoneLabel;
+  $('signup-consent-text').textContent = S.consent;
+  $('signup-note').textContent = S.note;
+  $('signup-cancel').textContent = S.cancel;
+  ['signup-email', 'signup-phone', 'signup-consent'].forEach((id) => $(id).addEventListener('input', signupReady));
+  $('signup-consent').addEventListener('change', signupReady);
+  $('signup-form').addEventListener('submit', submitSignup);
+  $('signup-cancel').addEventListener('click', () => closeSignup('dismissed'));
+  $('signup').addEventListener('cancel', () => setSignup(signupState() || 'dismissed'));   // Esc / back
+  $('signup').addEventListener('close', () => { if (gisReady) google.accounts.id.cancel(); });   // drop One Tap too
+  $('signup-gmail-change').addEventListener('click', () => { setGoogle(null); openSignupGoogle(); });
+  $('btn-updates').addEventListener('click', () => openSignup(false));
+  $('btn-updates').hidden = signupState() === 'done';
   $('btn-mine').addEventListener('click', openMine);
   $('mine-close').addEventListener('click', () => $('mine').close());
   updateMineButton();
@@ -718,6 +881,7 @@
   $('btn-download').addEventListener('click', download);
   $('btn-share').addEventListener('click', share);
   $('btn-retry-camera').addEventListener('click', startCamera);
+  $('btn-flip').addEventListener('click', flipCamera);
   $('wall-grid').addEventListener('scroll', () => {
     const t = $('wall-grid');
     if (t.scrollWidth - t.scrollLeft - t.clientWidth < 400) showMore();
@@ -734,5 +898,3 @@
 
   route();
 })();
-      facing = 'user';        // always start on the selfie camera
-  $('btn-flip').addEventListener('click', flipCamera);

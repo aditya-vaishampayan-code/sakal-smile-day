@@ -50,6 +50,15 @@
     .login input { width: 100%; min-height: 48px; padding: 0 12px; border: 1px solid #B9AED0; border-radius: 10px; }
     .login button { width: 100%; min-height: 48px; margin-top: 12px; border: 0; border-radius: 24px; background: var(--purple-deep); color: var(--white); font-weight: 600; }
     .error { color: #A3181A; margin: 10px 0 0; }
+    .signups { max-width: 640px; display: flex; flex-direction: column; gap: 16px; padding-top: 8px; }
+    .signups h2 { margin: 0; font: 700 22px/1.3 'Fredoka', sans-serif; color: var(--purple-deep); }
+    .signups .big { margin: 0; font-size: 17px; }
+    .signups .big strong { font-size: 28px; color: var(--purple-deep); }
+    .signups form { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); }
+    .signups form label { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; }
+    .signups form input { min-height: 44px; padding: 0 12px; border: 1px solid #B9AED0; border-radius: 8px; }
+    .signups form .remove { min-height: 44px; padding: 0 18px; border-radius: 22px; font-weight: 600; }
+    .signups .primary { align-self: start; min-height: 44px; padding: 0 22px; border: 0; border-radius: 22px; background: var(--purple-deep); color: var(--white); font-weight: 600; }
     .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 10px 18px; border-radius: 20px; background: var(--purple-deep); color: var(--white); font-weight: 500; opacity: 0; transition: opacity .2s; pointer-events: none; }
     .toast.on { opacity: 1; }
   </style>
@@ -72,20 +81,35 @@
           <button type="button" class="tab" data-view="latest" aria-pressed="true">Latest</button>
           <button type="button" class="tab" data-view="reported" aria-pressed="false">Reported</button>
           <button type="button" class="tab" data-view="hidden" aria-pressed="false">Auto-hidden</button>
+          <button type="button" class="tab" data-view="signups" aria-pressed="false">Sign-ups</button>
         </div>
         <button type="button" class="tab" id="signout">Sign out</button>
       </div>
     </header>
-    <div class="tools">
+    <div class="tools" id="tools">
       <label id="auto-wrap"><input type="checkbox" id="auto" checked> Auto-refresh every 20 s</label>
       <label id="at-wrap">Show photos added before <input type="datetime-local" id="at"></label>
       <button type="button" class="ghost" id="refresh">Refresh now</button>
       <span class="hint" id="hint"></span>
     </div>
     <main>
-      <ul class="grid" id="grid"></ul>
-      <p class="empty" id="empty" hidden>Nothing here.</p>
-      <button type="button" class="ghost more" id="more" hidden>Load more</button>
+      <div id="photos-pane">
+        <ul class="grid" id="grid"></ul>
+        <p class="empty" id="empty" hidden>Nothing here.</p>
+        <button type="button" class="ghost more" id="more" hidden>Load more</button>
+      </div>
+      <section class="signups" id="signups-pane" hidden aria-labelledby="su-title">
+        <h2 id="su-title">Event-update sign-ups</h2>
+        <p class="big"><strong id="su-count">–</strong> people have signed up</p>
+        <button type="button" class="primary" id="su-download">Download CSV</button>
+        <p class="hint">The file holds email addresses and mobile numbers. Keep it on Sakal systems only, and use it only for event updates, as people agreed. <span id="su-until"></span></p>
+        <form id="su-remove">
+          <label>Unsubscribe or deletion request: email or mobile number
+            <input id="su-contact" type="text" autocomplete="off" spellcheck="false" required>
+          </label>
+          <button type="submit" class="remove">Remove person</button>
+        </form>
+      </section>
     </main>
   </div>
   <p class="toast" id="toast" role="status"></p>
@@ -178,9 +202,57 @@
     function setView(next) {
       view = next;
       document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+      const signups = view === 'signups';
+      $('tools').hidden = $('photos-pane').hidden = signups;
+      $('signups-pane').hidden = !signups;
+      if (signups) return loadSignups();
       $('auto-wrap').hidden = $('at-wrap').hidden = view !== 'latest';
       $('hint').textContent = HINTS[view];
       load(false);
+    }
+
+    /* ---------- Sign-ups ---------- */
+    const day = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'long', year: 'numeric' });
+    async function loadSignups() {
+      try {
+        const data = await call('GET', '/api/admin/signups');
+        $('su-count').textContent = data.count.toLocaleString('en-IN');
+        // Deletion runs from midnight IST, so name the day before.
+        $('su-until').textContent = data.deleteAt ? `Every sign-up is deleted automatically after ${day.format(Date.parse(data.deleteAt) - 1)}.` : '';
+      } catch (e) { if (e.message !== 'unauthorized') toast('Could not load sign-ups.'); }
+    }
+
+    async function downloadCsv() {
+      const btn = $('su-download');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/admin/signups.csv', { headers: { Authorization: `Bearer ${pw}` } });
+        if (res.status === 401) return signOut('Wrong password. Please try again.');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const name = (res.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/);
+        const url = URL.createObjectURL(await res.blob());
+        const a = document.createElement('a');
+        a.href = url; a.download = name ? name[1] : 'smileday-signups.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      } catch { toast('Could not download. Try again.'); }
+      finally { btn.disabled = false; }
+    }
+
+    async function removeSignup(e) {
+      e.preventDefault();
+      const contact = $('su-contact').value.trim();
+      if (!contact) return;
+      try {
+        const res = await fetch(`/api/admin/signups?contact=${encodeURIComponent(contact)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${pw}` } });
+        if (res.status === 401) return signOut('Wrong password. Please try again.');
+        if (res.status === 400) return toast('That isn’t an email address or a 10-digit mobile number.');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { deleted } = await res.json();
+        toast(deleted ? 'Removed. They will get no more updates.' : 'No sign-up with that email or number.');
+        if (deleted) $('su-contact').value = '';
+        loadSignups();
+      } catch { toast('Could not remove. Try again.'); }
     }
 
     function startAuto() {
@@ -220,6 +292,8 @@
     $('more').addEventListener('click', () => load(true));
     $('at').addEventListener('change', () => load(false));
     $('signout').addEventListener('click', () => signOut());
+    $('su-download').addEventListener('click', downloadCsv);
+    $('su-remove').addEventListener('submit', removeSignup);
 
     if (pw) signIn();
   })();

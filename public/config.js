@@ -12,6 +12,8 @@ window.SMILE_CONFIG = {
   output: { width: 1080, height: 1350 },
   // Copy sent to the Smile Wall: smaller, so uploads are quick on mobile data
   upload: { width: 540, height: 675, quality: 0.82 },
+  // If an upload fails on a bad connection or a busy server, wait this long (ms) and retry
+  uploadRetryMs: [1000, 3000, 6000],
   // How often the wall checks for new smiles while it's on screen
   pollSeconds: 30,
   // Below this many photos, the sample cards fill out the wall
@@ -27,6 +29,29 @@ window.SMILE_CONFIG = {
     note: 'Sakal deletes every photo by 3 Nov 2026. You can delete yours sooner from this phone at any time.',
     ok: 'Add my photo',
     cancel: 'Not now'
+  },
+  // Event-update sign-ups (email and/or mobile), kept apart from photos. If you
+  // change the wording, bump signupConsentVersion here AND SIGNUP_CONSENT_VERSION
+  // in wrangler.toml. The keep-until date must match SIGNUPS_DELETE_AT there and privacy.html.
+  // googleClientId: the OAuth client for "Continue with Google"; must match
+  // GOOGLE_CLIENT_ID in wrangler.toml. Empty hides the Google button.
+  googleClientId: '',
+  signupConsentVersion: '2026-10-s1',
+  signup: {
+    title: 'Get Smile Day updates',
+    text: 'Hear about Pune Smile Day and other Sakal events in Pune. Add your email, your mobile number, or both.',
+    emailLabel: 'Email',
+    phoneLabel: 'Mobile number (SMS and WhatsApp)',
+    consent: 'I agree that Sakal may send me updates about Pune Smile Day and other Sakal events in Pune at the email or mobile number above. I can unsubscribe at any time.',
+    note: 'Optional, and separate from your photo. We keep these details until 31 Oct 2027, or until you unsubscribe.',
+    ok: 'Sign me up',
+    cancel: 'No thanks',
+    done: 'You’re signed up. Thank you!',
+    needContact: 'Add your email or mobile number.',
+    badEmail: 'Please check your email address.',
+    badPhone: 'Please enter a 10-digit Indian mobile number.',
+    googleFailed: 'Google sign-in didn’t work. Please type your email instead.',
+    failed: 'Could not sign you up. Check your connection and try again.'
   },
   messages: {
     added: 'Your smile is on the wall!',

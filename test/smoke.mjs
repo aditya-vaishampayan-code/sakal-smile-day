@@ -24,6 +24,14 @@ const jpeg = () => {
   crypto.getRandomValues(b.subarray(4, 100));
   return b;
 };
+// Uploads reach the wall through a queue, so poll until a condition holds.
+const until = async (fn, ms = 20000) => {
+  for (const end = Date.now() + ms; ; await new Promise((r) => setTimeout(r, 500))) {
+    const v = await fn();
+    if (v || Date.now() > end) return v;
+  }
+};
+const wallTop = () => call('GET', '/api/wall').then((r) => r.data);
 const up = (headers = {}, body = jpeg()) =>
   call('POST', '/api/photos', { body, headers: { 'Content-Type': 'image/jpeg', 'X-Consent': CONSENT, ...headers } });
 
@@ -43,9 +51,16 @@ check('second upload works', b.status === 201);
 const img = await fetch(BASE + a.data.url.replace(/^https?:\/\/[^/]+/, ''));
 check('photo is served', img.status === 200 && img.headers.get('content-type') === 'image/jpeg');
 
-const w = await call('GET', '/api/wall');
+const w = { data: await until(async () => { const d = await wallTop(); return d.count === start.data.count + 2 && d; }) || await wallTop() };
 check('newest photo is first on the wall', w.data.photos[0] && w.data.photos[0].id === b.data.id);
 check('counter went up by 2', w.data.count === start.data.count + 2, `${start.data.count} -> ${w.data.count}`);
+
+// Deleting straight after uploading, likely before the queue has written the row
+const c = await up();
+check('delete while still queued works', (await call('DELETE', `/api/photos/${c.data.id}`, { headers: { 'X-Delete-Token': c.data.deleteToken } })).status === 200);
+await new Promise((r) => setTimeout(r, 4000));
+const afterQueued = await wallTop();
+check('queued-then-deleted photo never shows', !afterQueued.photos.some((p) => p.id === c.data.id) && afterQueued.count === w.data.count, `count ${afterQueued.count}`);
 
 const page = await call('GET', `/api/wall?before=${b.data.id}`);
 check('pagination skips newer photos', page.data.photos[0] && page.data.photos[0].id === a.data.id);
@@ -68,6 +83,28 @@ check('admin remove works', (await call('DELETE', `/api/admin/photos/${b.data.id
 
 const end = await call('GET', `/api/wall?before=${'z'.repeat(17)}`);
 check('counter back to start', end.data.count === start.data.count, `${end.data.count}`);
+// Event-update sign-ups
+const SIGNUP_CONSENT = process.env.SIGNUP_CONSENT || '2026-10-s1';
+const su = (body) => call('POST', '/api/signups', { body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+const testEmail = `smoke-${Date.now()}@example.com`;
+const testPhone = `9${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`;
+check('sign-up without consent is refused', (await su({ email: testEmail })).status === 400);
+check('sign-up without email or phone is refused', (await su({ consent: SIGNUP_CONSENT })).data?.error === 'contact_required');
+check('bad email is refused', (await su({ consent: SIGNUP_CONSENT, email: 'not-an-email' })).data?.error === 'invalid_email');
+check('bad phone is refused', (await su({ consent: SIGNUP_CONSENT, phone: '12345' })).data?.error === 'invalid_phone');
+check('forged Google token is refused', (await su({ consent: SIGNUP_CONSENT, credential: 'aaa.bbb.ccc' })).data?.error === 'google_invalid');
+check('email sign-up works', (await su({ consent: SIGNUP_CONSENT, email: testEmail.toUpperCase() })).status === 201);
+check('adding a phone to the same email works', (await su({ consent: SIGNUP_CONSENT, email: testEmail, phone: `+91 ${testPhone}` })).status === 201);
+check('signing up again is fine', (await su({ consent: SIGNUP_CONSENT, phone: `0${testPhone}` })).status === 201);
+check('sign-up list needs password', (await call('GET', '/api/admin/signups')).status === 401);
+const csv = await fetch(`${BASE}/api/admin/signups.csv`, { headers: admin }).then((r) => r.text());
+const rows = csv.split('\r\n').filter((l) => l.includes(testEmail));
+check('CSV has one merged row', rows.length === 1 && rows[0].includes(`"+91${testPhone}"`), rows[0]);
+const removed = await call('DELETE', `/api/admin/signups?contact=${encodeURIComponent(testPhone)}`, { headers: admin });
+check('admin removes a person', removed.status === 200 && removed.data.deleted === 1);
+const csv2 = await fetch(`${BASE}/api/admin/signups.csv`, { headers: admin }).then((r) => r.text());
+check('removed person is gone from CSV', !csv2.includes(testEmail));
+
 check('unknown API path is 404', (await call('GET', '/api/nope')).status === 404);
 check('home page is served', (await fetch(BASE + '/')).status === 200);
 

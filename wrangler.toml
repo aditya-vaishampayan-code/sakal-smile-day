@@ -30,6 +30,20 @@ database_id = "00000000-0000-0000-0000-000000000000"   # filled in after `wrangl
 binding = "PHOTOS"
 bucket_name = "smileday-photos"
 
+# Uploads queue their D1 row here; the consumer (queue() in worker/index.js)
+# writes up to 100 rows per transaction, so D1 keeps up with a 9:00 AM spike.
+# Messages hold only the id, time, consent version and the delete-token hash.
+[[queues.producers]]
+binding = "UPLOADS"
+queue = "smileday-uploads"
+
+[[queues.consumers]]
+queue = "smileday-uploads"
+max_batch_size = 100
+max_batch_timeout = 2      # seconds: a photo reaches the wall within ~2 s plus the 10 s wall cache
+max_retries = 10
+retry_delay = 5
+
 # Per-IP limits. Generous, because many phones share one mobile-network IP.
 [[ratelimits]]
 name = "UPLOAD_LIMITER"
@@ -41,7 +55,13 @@ name = "REPORT_LIMITER"
 namespace_id = "7302"
 simple = { limit = 30, period = 60 }
 
-# Checks every 30 minutes whether DELETE_AT has passed, then wipes all photos.
+[[ratelimits]]
+name = "SIGNUP_LIMITER"
+namespace_id = "7303"
+simple = { limit = 30, period = 60 }
+
+# Checks every 30 minutes whether DELETE_AT has passed, then wipes all photos
+# (and, once SIGNUPS_DELETE_AT has passed, all sign-ups).
 [triggers]
 crons = ["*/30 * * * *"]
 
@@ -52,6 +72,17 @@ DELETE_AT = "2026-11-02T18:30:00Z"
 # Bump when the consent wording in public/config.js changes (must match there).
 CONSENT_VERSION = "2026-10-v1"
 REPORT_HIDE_AT = "5"
+# Event-update sign-ups. Bump SIGNUP_CONSENT_VERSION when the sign-up wording in
+# public/config.js changes (must match signupConsentVersion there).
+SIGNUP_CONSENT_VERSION = "2026-10-s1"
+# Sign-ups are kept apart from photos and deleted from this date (midnight IST,
+# 1 Nov 2027): one year, so we can invite people to the next Smile Day.
+# Placeholder until Sakal legal confirms; privacy.html and config.js say the same date.
+SIGNUPS_DELETE_AT = "2027-10-31T18:30:00Z"
+# OAuth client id for "Continue with Google" (Sakal's own Google Cloud project for
+# this campaign; see DEPLOY.md). Must match googleClientId in public/config.js.
+# Empty: the Google button is hidden and people type their email.
+GOOGLE_CLIENT_ID = ""
 # Empty: photos are served by the Worker at /p/<id>.jpg. Once the domain is on
 # Cloudflare, set to "https://photos.bharatsmitdin.com/" (R2 custom domain,
 # cached at the edge and not counted as Worker requests).

@@ -11,6 +11,24 @@
         ],
         "createdAt": "2026-10-09T10:26:42.037Z",
         "reason": "Sakal design team mockup shows faded background emojis on the camera screen; user asked for the design exactly"
+      },
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "public/admin.html"
+        ],
+        "createdAt": "2026-10-13T11:17:33.554Z",
+        "reason": "Claude: purple is Sakal's campaign brand palette (CLAUDE.md design system, from the Sakal design team's mockups)"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "public/index.html"
+        ],
+        "createdAt": "2026-10-13T11:17:33.836Z",
+        "reason": "Claude: shadows are dark-purple downward-offset elevation shadows from the Sakal design team's mockups, not chromatic glows"
       }
     ]
   }

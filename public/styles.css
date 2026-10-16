@@ -312,6 +312,30 @@ svg { display: block; }
 .sheet__secondary { border: 1px solid #CFC2E6; background: transparent; color: var(--white); }
 .sheet__primary:focus-visible { outline-color: var(--white); }
 
+/* Event-update sign-up */
+.sheet__eyebrow { margin: 0; font-size: 15px; font-weight: 600; color: var(--yellow); }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; }
+.field input {
+  width: 100%; height: 48px; padding: 0 14px;
+  border: 0; border-radius: 12px; background: var(--white); color: var(--ink);
+  font: 400 16px var(--sans);   /* 16px stops iOS zooming in on focus */
+}
+.field__tel { display: flex; align-items: center; height: 48px; border-radius: 12px; background: var(--white); overflow: hidden; }
+.field__tel > span { padding: 0 2px 0 14px; font-size: 16px; color: #5A5170; }
+.field__tel input { flex: 1; min-width: 0; height: 100%; padding-left: 6px; border-radius: 0; }
+.field input::placeholder { color: #6B6380; }
+.signup-google { display: flex; flex-direction: column; gap: 14px; }
+.signup-gbtn { display: flex; justify-content: center; min-height: 44px; color-scheme: light; }
+.signup-or { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #E9E1F5; }
+.signup-or::before, .signup-or::after { content: ''; flex: 1; height: 1px; background: #8C77B8; }
+.signup-chip {
+  margin: 0; min-height: 48px; padding: 6px 4px 6px 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border-radius: 12px; background: rgba(255, 255, 255, .12);
+  font-size: 15px; font-weight: 500; overflow-wrap: anywhere;
+}
+.signup-chip .link-btn { flex: none; color: var(--yellow); }
+
 .mine-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .mine-list li { display: flex; flex-direction: column; gap: 8px; }
 .mine-list img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 8px; background: var(--purple); }
