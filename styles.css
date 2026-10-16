@@ -176,7 +176,8 @@ svg { display: block; }
   left: calc(73 * var(--u)); top: calc(65 * var(--u));
   width: calc(245 * var(--u)); height: calc(310 * var(--u));
 }
-.stage__video { object-fit: cover; transform: scaleX(-1); background: #4A2A80; }
+.stage__video { object-fit: cover; transform: scaleX(-1); background: #4A2A80; }   /* selfie view is mirrored */
+.stage--back .stage__video { transform: none; }
 .stage__frame { left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
 .stage__countdown {
   display: grid; place-items: center;
@@ -210,6 +211,15 @@ svg { display: block; }
 .shutter svg { width: calc(48 * var(--u)); height: calc(48 * var(--u)); }
 .shutter:active { transform: scale(.95); }
 .shutter:disabled { opacity: .6; cursor: not-allowed; }
+.flip {
+  position: absolute; left: calc(272 * var(--u)); top: calc(681 * var(--u));
+  width: calc(48 * var(--u)); height: calc(48 * var(--u)); min-width: 44px; min-height: 44px; padding: 0;
+  border: 1px solid var(--white); border-radius: 50%; background: var(--purple-deep); color: var(--white);
+  display: grid; place-items: center;
+}
+.flip svg { width: 55%; height: 55%; }
+.flip:active { transform: scale(.95); }
+.flip:disabled { opacity: .6; cursor: not-allowed; }
 .hint {
   position: absolute; margin: 0; left: 0; top: calc(762 * var(--u)); width: 100%;
   text-align: center; font-size: calc(15 * var(--u));

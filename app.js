@@ -272,7 +272,7 @@
     }
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1600 } },
+        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 1600 } },
         audio: false
       });
       video.srcObject = stream;
@@ -280,6 +280,9 @@
       $('btn-shutter').disabled = false;
     } catch (err) {
       console.error(err);
+  let facing = 'user';           // 'user' = selfie camera, 'environment' = back camera
+  let mirrored = true;           // only the selfie view is mirrored
+  let flipping = false;
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
       showCameraError(denied
         ? 'Camera permission was blocked. Allow camera access in your browser settings, then try again.'
@@ -292,8 +295,12 @@
     $('camera-error').hidden = false;
     $('btn-shutter').disabled = true;
   }
+      const seen = stream.getVideoTracks()[0].getSettings().facingMode;   // what the browser really opened
+      mirrored = (seen || facing) !== 'environment';
+      $('stage').classList.toggle('stage--back', !mirrored);
 
   function stopCamera() {
+      showFlip();
     if (stream) stream.getTracks().forEach((t) => t.stop());
     stream = null;
     video.srcObject = null;
@@ -303,6 +310,30 @@
     phase = next;
     const review = next === 'review';
     $('controls-ready').hidden = next !== 'ready';
+  /* The switch button only appears when the phone has more than one camera. */
+  async function showFlip() {
+    let cams = 2;
+    try { cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput').length; } catch (e) { /* show it anyway */ }
+    $('btn-flip').hidden = cams < 2;
+    $('btn-flip').setAttribute('aria-label', mirrored ? 'Switch to the back camera' : 'Switch to the front camera');
+  }
+
+  async function flipCamera() {
+    if (phase !== 'ready' || flipping) return;
+    flipping = true;
+    $('btn-flip').disabled = true;
+    const before = facing;
+    facing = facing === 'user' ? 'environment' : 'user';
+    stopCamera();
+    await startCamera();
+    if (!stream) {            // that camera wouldn't open: go back to the one that worked
+      facing = before;
+      await startCamera();
+    }
+    $('btn-flip').disabled = false;
+    flipping = false;
+  }
+
     $('controls-counting').hidden = next !== 'counting';
     $('controls-review').hidden = !review;
     $('countdown').hidden = next !== 'counting';
@@ -339,7 +370,7 @@
     flash.classList.add('go');
 
     try {
-      resultBlob = await composeFrame(video);
+      resultBlob = await composeFrame(video, mirrored);
       if (resultUrl) URL.revokeObjectURL(resultUrl);
       resultUrl = URL.createObjectURL(resultBlob);
       result.src = resultUrl;
@@ -353,7 +384,7 @@
   }
 
   /* Draws the Smile Frame onto a canvas and returns a 1080 x 1350 JPEG blob. */
-  async function composeFrame(source) {
+  async function composeFrame(source, mirror = true) {
     await Promise.all([fontsReady(), stickersReady]);
     const { width: W, height: H } = CFG.output;
     const canvas = document.createElement('canvas');
@@ -361,7 +392,7 @@
     const ctx = canvas.getContext('2d');
     const k = W / FRAME.width;
     ctx.setTransform(k, 0, 0, k, 0, 0);
-    drawFrame(ctx, { cardHeight: FRAME.cardHeightSaved, photo: source, background: true });
+    drawFrame(ctx, { cardHeight: FRAME.cardHeightSaved, photo: source, background: true, mirror });
     return new Promise((res, rej) =>
       canvas.toBlob((b) => (b ? res(b) : rej(new Error('toBlob failed'))), 'image/jpeg', 0.9));
   }
@@ -506,3 +537,5 @@
 
   route();
 })();
+      facing = 'user';        // always start on the selfie camera
+  $('btn-flip').addEventListener('click', flipCamera);
