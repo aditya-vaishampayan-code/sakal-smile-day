@@ -114,6 +114,9 @@ svg { display: block; }
 .carousel__track li { flex: 0 0 auto; width: calc(153 * var(--u)); height: calc(191 * var(--u)); scroll-snap-align: start; }
 .carousel__track img, .carousel__track canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
 .carousel__track li { position: relative; }
+/* No long-press "Save image" or drag-out on wall photos: touches land on the tile, not the image */
+.carousel__track img { pointer-events: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+.carousel__track { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 /* Report (others' photos) or delete (your own) button on each tile */
 .tile__act {
   position: absolute; right: calc(8 * var(--u)); bottom: calc(8 * var(--u));

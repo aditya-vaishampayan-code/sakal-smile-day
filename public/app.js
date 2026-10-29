@@ -321,6 +321,7 @@
     img.alt = own ? 'Your Smile Frame' : 'A Smile Frame from the Smile Wall';
     img.loading = 'lazy';
     img.decoding = 'async';
+    img.draggable = false;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `tile__act${own ? ' tile__act--own' : ''}`;
@@ -917,6 +918,8 @@
   $('btn-retry-camera').addEventListener('click', startCamera);
   $('btn-reload-camera').addEventListener('click', () => location.reload());
   $('btn-flip').addEventListener('click', flipCamera);
+  // No "Save image" menu on wall photos (right-click, or long-press on Android)
+  $('wall-grid').addEventListener('contextmenu', (e) => e.preventDefault());
   $('wall-grid').addEventListener('scroll', () => {
     const t = $('wall-grid');
     if (t.scrollWidth - t.scrollLeft - t.clientWidth < 400) showMore();
