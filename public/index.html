@@ -23,19 +23,15 @@
 
     <img class="top-logo" src="assets/sakal-logo-white.png" alt="Sakal" width="102" height="26">
     <p class="date-chip" id="date-chip">1 Nov · 9:00 AM</p>
-    <img class="logo-badge" src="assets/sakal-logo-white.png" alt="" aria-hidden="true" width="78" height="20">
-    <h1 class="home-logo"><img src="assets/pune-smile-day-logo.svg" alt="Pune Smile Day" width="216" height="154"></h1>
+    <h1 class="home-logo"><img src="assets/smile-day-logo.png" alt="Smile Day, 1 Nov 2026" width="133" height="133"></h1>
 
     <h2 class="wall-title">The Wall of Smiles</h2>
-    <div class="wall-bar"><span class="wall-bar__name">Smile Wall</span><span class="wall-bar__count" id="smile-count"></span></div>
+    <p class="wall-count" id="smile-count"></p>
 
-    <section class="carousel" aria-label="Photos on the Smile Wall">
-      <button type="button" class="car-btn car-btn--prev" id="car-prev" aria-label="Previous photos">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <ul class="carousel__track" id="wall-grid"></ul>
-      <button type="button" class="car-btn car-btn--next" id="car-next" aria-label="More photos">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+    <section class="wall" aria-label="Photos on the Smile Wall">
+      <ul class="wall__grid" id="wall-grid"></ul>
+      <button type="button" class="wall__more" id="wall-more" aria-label="More photos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
     </section>
 

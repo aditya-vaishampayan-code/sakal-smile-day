@@ -231,6 +231,7 @@
       if (!track.children.length) {
         CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
         toast(CFG.messages.wallFailed);
+        updateMore();
       }
       return;
     }
@@ -244,7 +245,8 @@
     setCount(data.count + fresh.length);
     setClosed(data.closed);
     if (!data.next && wallState.ids.size < CFG.samplesUntil) CFG.samples.forEach((s) => track.appendChild(sampleTile(s)));
-    track.scrollLeft = 0;
+    track.scrollTop = 0;
+    updateMore();
   }
 
   function appendPhotos(photos) {
@@ -257,7 +259,7 @@
     });
   }
 
-  /* Loads the next page when the carousel nears its end. */
+  /* Loads the next page when the wall nears its end. */
   async function showMore() {
     if (!wallState.next || wallState.loading) return;
     wallState.loading = true;
@@ -269,7 +271,14 @@
       console.error('Could not load more photos', e);
     } finally {
       wallState.loading = false;
+      updateMore();
     }
+  }
+
+  /* The "more" chevron goes once there is nothing further down. */
+  function updateMore() {
+    const t = $('wall-grid');
+    $('wall-more').hidden = !wallState.next && t.scrollHeight - t.scrollTop - t.clientHeight < 4;
   }
 
   /* While the wall is on screen, new smiles slide in at the front and the counter ticks up. */
@@ -279,13 +288,14 @@
     try { data = await api.wall(); } catch { return; }
     const track = $('wall-grid');
     const newer = data.photos.filter((p) => !wallState.ids.has(p.id) && !reported.has(p.id));
-    const width = track.scrollWidth;
+    const height = track.scrollHeight;
     newer.reverse().forEach((p) => {
       wallState.ids.add(p.id);
       track.prepend(tile(p));
     });
-    // Someone browsing further along keeps their place.
-    if (track.scrollLeft > 0) track.scrollLeft += track.scrollWidth - width;
+    // Someone browsing further down keeps their place.
+    if (track.scrollTop > 0) track.scrollTop += track.scrollHeight - height;
+    updateMore();
     setCount(data.count);
     setClosed(data.closed);
   }
@@ -423,17 +433,14 @@
     $('mine').showModal();
   }
 
-  function scrollWall(dir) {
+  /* The chevron moves the wall down one row. */
+  function scrollWall() {
     const track = $('wall-grid');
     const item = track.querySelector('li');
     if (!item) return;
-    const step = item.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0);
-    if (dir > 0) showMore();
-    const max = track.scrollWidth - track.clientWidth;
-    let to = track.scrollLeft + dir * step;
-    if (to > max + 1) to = 0;          // wrap around at the ends
-    else if (to < -1) to = max;
-    track.scrollTo({ left: to, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    const step = item.getBoundingClientRect().height + parseFloat(getComputedStyle(track).rowGap || 0);
+    showMore();
+    track.scrollBy({ top: step, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
 
   /* ---------------- Camera ---------------- */
@@ -922,10 +929,10 @@
   $('wall-grid').addEventListener('contextmenu', (e) => e.preventDefault());
   $('wall-grid').addEventListener('scroll', () => {
     const t = $('wall-grid');
-    if (t.scrollWidth - t.scrollLeft - t.clientWidth < 400) showMore();
+    if (t.scrollHeight - t.scrollTop - t.clientHeight < 400) showMore();
+    updateMore();
   }, { passive: true });
-  $('car-prev').addEventListener('click', () => scrollWall(-1));
-  $('car-next').addEventListener('click', () => scrollWall(1));
+  $('wall-more').addEventListener('click', scrollWall);
   window.addEventListener('hashchange', route);
   window.addEventListener('resize', () => { if (phase !== 'review') paintOverlay(); });
   stickersReady.then(() => fontsReady()).then(paintOverlay);

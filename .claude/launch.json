@@ -6,6 +6,13 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["test/dev-server.mjs"],
       "port": 8787
+    },
+    {
+      "name": "smileday-dev-local-photos",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["test/dev-server.mjs"],
+      "env": { "PORT": "8789", "VARS": "{\"PHOTO_BASE\":\"\"}" },
+      "port": 8789
     }
   ]
 }
