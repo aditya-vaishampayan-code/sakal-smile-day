@@ -257,6 +257,7 @@
       wallState.ids.add(p.id);
       track.insertBefore(tile(p), firstSample);
     });
+    syncWallFocus();
   }
 
   /* Loads the next page when the wall nears its end. */
@@ -295,6 +296,7 @@
     });
     // Someone browsing further down keeps their place.
     if (track.scrollTop > 0) track.scrollTop += track.scrollHeight - height;
+    syncWallFocus();
     updateMore();
     setCount(data.count);
     setClosed(data.closed);
@@ -332,8 +334,12 @@
     img.loading = 'lazy';
     img.decoding = 'async';
     img.draggable = false;
+    img.addEventListener('load', () => li.classList.add('tile--in'), { once: true });
+    // Gone from storage (removed, or the wall closed): drop the tile rather than leave an empty card
+    img.addEventListener('error', () => { li.remove(); syncWallFocus(); updateMore(); }, { once: true });
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.tabIndex = -1;               // syncWallFocus() decides which tile is the wall's one Tab stop
     btn.className = `tile__act${own ? ' tile__act--own' : ''}`;
     btn.setAttribute('aria-label', own ? 'Delete my photo' : 'Report this photo');
     btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-${own ? 'trash' : 'flag'}"/></svg>`;
@@ -346,6 +352,38 @@
     const li = $('wall-grid').querySelector(`[data-id="${id}"]`);
     if (li) li.remove();
     wallState.ids.delete(id);
+    syncWallFocus();
+  }
+
+  /* The wall is one Tab stop (roving tabindex): Tab lands on one tile's button and
+   * the arrow keys move between tiles, so the camera button and footer links stay
+   * a few Tabs away however many photos have loaded. Report buttons are numbered
+   * so a screen reader can tell them apart. */
+  function syncWallFocus() {
+    const btns = [...$('wall-grid').querySelectorAll('.tile__act')];
+    const current = btns.find((b) => b.tabIndex === 0) || btns[0];
+    btns.forEach((b, i) => {
+      b.tabIndex = b === current ? 0 : -1;
+      if (!b.classList.contains('tile__act--own')) b.setAttribute('aria-label', `Report photo ${i + 1}`);
+    });
+  }
+
+  function moveWallFocus(e) {
+    const btns = [...$('wall-grid').querySelectorAll('.tile__act')];
+    const at = btns.indexOf(document.activeElement);
+    if (at < 0) return;
+    const cols = getComputedStyle($('wall-grid')).gridTemplateColumns.split(' ').length;
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[e.key];
+    let to;
+    if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = btns.length - 1;
+    else if (step) to = at + step;
+    else return;
+    e.preventDefault();
+    to = Math.max(0, Math.min(btns.length - 1, to));
+    btns[at].tabIndex = -1;
+    btns[to].tabIndex = 0;
+    btns[to].focus();
   }
 
   async function reportPhoto(id) {
@@ -916,7 +954,6 @@
   wallState.poll = setInterval(pollWall, CFG.pollSeconds * 1000);
 
   $('date-chip').textContent = CFG.dateChip;
-  $('home-tags').textContent = CFG.hashtags.join(' ');
   $('btn-shutter').addEventListener('click', startCountdown);
   $('btn-retake').addEventListener('click', retake);
   $('btn-add').addEventListener('click', addToWall);
@@ -933,6 +970,7 @@
     updateMore();
   }, { passive: true });
   $('wall-more').addEventListener('click', scrollWall);
+  $('wall-grid').addEventListener('keydown', moveWallFocus);
   window.addEventListener('hashchange', route);
   window.addEventListener('resize', () => { if (phase !== 'review') paintOverlay(); });
   stickersReady.then(() => fontsReady()).then(paintOverlay);

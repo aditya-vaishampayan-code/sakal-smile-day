@@ -44,11 +44,11 @@ svg { display: block; }
 }
 .screen { --shift: 0; }     /* design px everything below the logo moves up (short phones) */
 .screen > * { position: absolute; }
-/* Home runs 86 design px past the artboard: the hashtags and links sit below "powered by" */
-.screen--home { height: calc((930 - var(--shift)) * var(--u)); }
-.screen--home .skyline { top: calc((753 - var(--shift)) * var(--u)); }
+/* Home runs 52 design px past the artboard: the footer links sit below "powered by" */
+.screen--home { height: calc((896 - var(--shift)) * var(--u)); }
+.screen--home .skyline { top: calc((719 - var(--shift)) * var(--u)); }
 
-/* The scrim darkens the lower skyline so the hashtags, links and "powered by"
+/* The scrim darkens the lower skyline so the links and "powered by"
  * that sit over it keep 4.5:1; the rooftops above stay bright. */
 .skyline {
   left: 0; top: calc((667 - var(--shift)) * var(--u)); width: 100%; height: calc(177 * var(--u));
@@ -82,7 +82,7 @@ svg { display: block; }
   height: calc(24 * var(--u)); padding: 0 calc(16 * var(--u)) 0 calc(11 * var(--u));
   display: flex; align-items: center;
   border: 1px solid var(--white); border-radius: calc(12 * var(--u));
-  background: linear-gradient(90deg, var(--bar-from) 0%, var(--bar-from) 62%, var(--bar-to) 100%);
+  background: linear-gradient(90deg, var(--bar-from) calc(100% - 20 * var(--u)), var(--bar-to));
   font-size: max(12px, calc(13 * var(--u))); font-weight: 500; white-space: nowrap;
 }
 .wall-count:empty { visibility: hidden; }
@@ -93,7 +93,7 @@ svg { display: block; }
   text-align: center; font-size: calc(16 * var(--u)); font-weight: 600; line-height: 1.35;
 }
 .foot-links {
-  margin: 0; left: 0; top: calc((866 - var(--shift)) * var(--u)); width: 100%; height: calc(44 * var(--u));
+  margin: 0; left: 0; top: calc((846 - var(--shift)) * var(--u)); width: 100%; height: calc(44 * var(--u));
   display: flex; align-items: center; justify-content: center; gap: calc(18 * var(--u));
   font-size: max(12px, calc(13 * var(--u)));
 }
@@ -101,7 +101,6 @@ svg { display: block; }
   display: inline-flex; align-items: center; height: 100%; min-height: 44px; padding: 0 4px;
   border: 0; background: none; color: var(--white); font: inherit; text-decoration: underline; text-underline-offset: 3px;
 }
-.tags { margin: 0; left: 0; top: calc((846 - var(--shift)) * var(--u)); width: 100%; text-align: center; font-size: max(12px, calc(12 * var(--u))); font-weight: 500; color: var(--yellow); }
 .home-logo { margin: 0; left: calc(129 * var(--u)); top: calc(86 * var(--u)); width: calc(132 * var(--u)); }
 .home-logo img { display: block; width: 100%; height: auto; }
 
@@ -112,7 +111,7 @@ svg { display: block; }
   list-style: none; margin: 0; padding: calc(4 * var(--u)) calc(55 * var(--u)) calc(40 * var(--u));
   display: grid; grid-template-columns: repeat(auto-fill, calc(132 * var(--u)));
   justify-content: center; column-gap: calc(16 * var(--u)); row-gap: calc(6 * var(--u));
-  height: 100%; overflow-y: auto; overscroll-behavior-y: contain;
+  height: 100%; overflow-y: auto;   /* at the end, a swipe carries on to the page and the footer links */
   scrollbar-width: none;
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 48 * var(--u)), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 48 * var(--u)), transparent);
@@ -120,14 +119,19 @@ svg { display: block; }
 .wall__grid::-webkit-scrollbar { display: none; }
 .wall__grid li { position: relative; aspect-ratio: 4 / 5; }
 .wall__grid img, .wall__grid canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Until a photo arrives its tile shows the card's outline (the card fills 86 x 90% of the frame), then the photo fades in */
+.tile { background: linear-gradient(var(--purple-blob), var(--purple-blob)) center / 86% 90% no-repeat; }
+.tile img { opacity: 0; transition: opacity .35s ease-out; }
+.tile--in img { opacity: 1; }
 /* No long-press "Save image" or drag-out on wall photos: touches land on the tile, not the image */
 .wall__grid img { pointer-events: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .wall__grid { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-/* Report (others' photos) or delete (your own) button on each tile */
+/* Report (others' photos) or delete (your own) button on each tile, in the free
+ * corner of the card's bottom band, clear of the sunglasses sticker */
 .tile__act {
-  position: absolute; right: calc(8 * var(--u)); bottom: calc(8 * var(--u));
-  width: calc(30 * var(--u)); height: calc(30 * var(--u)); padding: 0;
-  border: 0; border-radius: 50%; background: rgba(64, 35, 114, .85); color: var(--white);
+  position: absolute; right: calc(9 * var(--u)); bottom: calc(4 * var(--u));
+  width: calc(22 * var(--u)); height: calc(22 * var(--u)); padding: 0;
+  border: 0; border-radius: 50%; background: var(--overlay); color: var(--white);
   display: grid; place-items: center;
 }
 .tile__act svg { width: 58%; height: 58%; }
@@ -135,7 +139,7 @@ svg { display: block; }
 .wall__more {
   position: absolute; z-index: 2; left: 50%; bottom: 0; transform: translateX(-50%);
   width: calc(28 * var(--u)); height: calc(28 * var(--u)); padding: 0;
-  border: 0; border-radius: 50%; background: rgba(64, 35, 114, .85); color: var(--white);
+  border: 0; border-radius: 50%; background: var(--overlay); color: var(--white);
   display: grid; place-items: center;
 }
 /* Small round buttons get a 44px hit area, whatever the screen width */
@@ -143,6 +147,8 @@ svg { display: block; }
   content: ''; position: absolute; left: 50%; top: 50%;
   width: max(44px, 100%); height: max(44px, 100%); transform: translate(-50%, -50%);
 }
+.wall__more:hover { background: var(--purple-deep); }
+.wall__more:active { transform: translateX(-50%) scale(.92); }
 .wall__more svg { width: 64%; height: 64%; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 
 .cta {
@@ -393,7 +399,7 @@ svg { display: block; }
       "logo    count"
       "logo    wall"
       "title   wall"
-      "tags    cta"
+      ".       cta"
       "links   links"
       "powered powered";
   }
@@ -406,7 +412,6 @@ svg { display: block; }
   .wall-count { grid-area: count; justify-self: end; }
   .wall { grid-area: wall; width: 100%; height: calc(300 * var(--u)); }
   .cta, .closed-note { grid-area: cta; }
-  .tags { grid-area: tags; align-self: center; width: 100%; }
   .foot-links { grid-area: links; height: auto; }
   .screen--home .powered { grid-area: powered; width: 100%; }
 
@@ -455,7 +460,7 @@ svg { display: block; }
     justify-items: center; align-content: center; row-gap: calc(14 * var(--u));
     grid-template-areas:
       "toplogo date" "logo logo" "title title" "count count"
-      "wall wall" "cta cta" "tags tags" "links links" "powered powered";
+      "wall wall" "cta cta" "links links" "powered powered";
   }
   .screen--home > :not(.skyline):not(.blob) { position: relative; left: auto; top: auto; right: auto; }
   .screen--home .skyline { top: auto; bottom: 0; height: auto; aspect-ratio: 390 / 177; }
@@ -467,7 +472,6 @@ svg { display: block; }
   .wall-count { grid-area: count; justify-self: end; margin-right: calc(20 * var(--u)); }
   .wall { grid-area: wall; width: min(100%, calc(640 * var(--u))); height: calc(470 * var(--u)); }
   .cta { grid-area: cta; margin-top: calc(8 * var(--u)); }
-  .tags { grid-area: tags; width: 100%; }
   .closed-note { grid-area: cta; }
   .foot-links { grid-area: links; height: auto; }
   .screen--home .powered { grid-area: powered; width: 100%; }
@@ -486,7 +490,6 @@ svg { display: block; }
       "logo    count"
       "logo    wall"
       "logo    cta"
-      "logo    tags"
       "logo    links"
       "powered powered";
   }
@@ -504,5 +507,6 @@ svg { display: block; }
   .stage__flash.go { animation-duration: .3s; }
   .toast { transform: translate(-50%, 0); transition: opacity .25s; }
   .shutter:active, .flip:active, .btn:active { transform: none; }
+  .wall__more:active { transform: translateX(-50%); }
 }
 @keyframes fade { from { opacity: 0; } }
